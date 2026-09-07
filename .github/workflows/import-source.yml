@@ -1,0 +1,25 @@
+name: Import store source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [store-source.zip]
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract storefront source
+        run: unzip -q -o store-source.zip
+      - name: Commit storefront source
+        run: |
+          git config user.name "alobeidi-deploy"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Import standalone store source"
+          git push

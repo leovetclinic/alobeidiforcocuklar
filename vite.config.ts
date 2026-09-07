@@ -8,12 +8,18 @@ const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
 const localBindingConfig = {
+  name: "alobeidi-store",
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
+  routes: [
+    { pattern: "alobeidiforcocuklar.win", custom_domain: true },
+    { pattern: "www.alobeidiforcocuklar.win", custom_domain: true },
+  ],
   d1_databases: [
     {
       binding: "DB",
       database_name: "alobeidi-store-db",
+      migrations_dir: "drizzle",
       database_id:
         process.env.CLOUDFLARE_D1_DATABASE_ID ??
         SITE_CREATOR_PLACEHOLDER_DATABASE_ID,

@@ -68,7 +68,9 @@ jobs:
         run: npm run build
 
       - name: Apply safe database migrations
-        run: npx wrangler d1 migrations apply DB --remote --config dist/server/wrangler.json
+        run: |
+          cp -R drizzle dist/server/drizzle
+          npx wrangler d1 migrations apply DB --remote --config dist/server/wrangler.json
 
       - name: Set private admin bootstrap credentials
         run: |

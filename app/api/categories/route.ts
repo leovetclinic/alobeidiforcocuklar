@@ -1,0 +1,14 @@
+import {getDb} from "@/db";import {categories} from "@/db/schema";import {asc,eq} from "drizzle-orm";import {requireAdmin} from "@/lib/auth";
+const presets=[
+ ["ملابس الأطفال","👕",["أفرولات","بربتوز ورومبير","بيجامات وملابس نوم","أطقم خروج","فساتين","بلوزات وتيشيرتات","بناطيل وشورتات","جاكيتات وملابس شتوية"]],
+ ["حديثي الولادة","👶",["ملابس حديثي الولادة","أطقم المستشفى","قماط ولفافات","قبعات وكفوف","احتياجات أول الأيام"]],
+ ["الإكسسوارات","🎀",["عصبات وإكسسوارات شعر","قبعات وكب","جواريب وBooties","مرايل","أحذية أطفال","حقائب ومستلزمات خروج"]],
+ ["النوم والفراش","🛏️",["كريكوت وأسرّة مواليد","أسرّة أطفال","بطانيات","لحاف وأطقم فراش","شراشف","ناموسيات","مستلزمات النوم"]],
+ ["الرضاعة والتغذية","🍼",["ممات ورضاعات","لهايات ورؤوس رضاعات","حافظات وأدوات تنظيف الرضاعات","أكواب أطفال","ملاعق وصحون","مستلزمات الطعام"]],
+ ["العربات والتنقل","🛒",["عربات أطفال","عربات حديثي الولادة","حمالات أطفال","كراسي أطفال","حقائب أطفال","مستلزمات العربات والخروج"]],
+ ["الحفاظات والعناية","🧷",["حفاظات","مناديل ومستلزمات التغيير","مناشف وروب أطفال","مستلزمات الاستحمام","النظافة والعناية"]],
+ ["ألعاب ومستلزمات","🧸",["ألعاب حديثي الولادة","ألعاب تعليمية","مستلزمات يومية","هدايا أطفال"]]
+] as const;
+async function installPresets(){const db=getDb();for(const [i,p] of presets.entries()){const slug=`preset-main-${i}`;await db.insert(categories).values({name:p[0],slug,icon:p[1],sortOrder:i*10,active:true}).onConflictDoNothing();const [main]=await db.select().from(categories).where(eq(categories.slug,slug)).limit(1);if(main)for(const [j,name] of p[2].entries())await db.insert(categories).values({name,slug:`preset-${i}-${j}`,icon:p[1],parentId:main.id,sortOrder:i*10+j+1,active:true}).onConflictDoNothing()}}
+export async function GET(req:Request){const wantsAdmin=new URL(req.url).searchParams.get("admin")==="1",admin=wantsAdmin&&!!await requireAdmin();if(wantsAdmin&&!admin)return Response.json({error:"غير مخول"},{status:401});if(admin&&new URL(req.url).searchParams.get("installPresets")==="1")await installPresets();const rows=admin?await getDb().select().from(categories).orderBy(asc(categories.sortOrder)):await getDb().select().from(categories).where(eq(categories.active,true)).orderBy(asc(categories.sortOrder));return Response.json({categories:rows})}
+export async function POST(req:Request){if(!await requireAdmin())return Response.json({error:"غير مخول"},{status:401});const x=await req.json();if(x.action==="installPresets"){await installPresets();return Response.json({ok:true})}if(!x.name)return Response.json({error:"اسم القسم مطلوب"},{status:400});const [row]=await getDb().insert(categories).values({name:x.name,slug:x.slug||`category-${Date.now()}`,icon:x.icon||"🧸",imageUrl:x.imageUrl||null,parentId:x.parentId?+x.parentId:null,sortOrder:+x.sortOrder||0,active:x.active!==false}).returning();return Response.json({category:row},{status:201})}

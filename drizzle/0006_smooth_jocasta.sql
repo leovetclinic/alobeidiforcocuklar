@@ -1,0 +1,1 @@
+ALTER TABLE `banners` ADD `style` text;

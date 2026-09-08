@@ -655,7 +655,7 @@ export default function Storefront() {
               <a href={store.facebook} aria-label="Facebook"><FacebookIcon /></a>
               <a href={store.maps} aria-label="موقعنا على الخريطة"><MapPin /></a>
             </div>
-            {payments.length>0&&<div className="mt-5"><b className="text-sm">طرق الدفع المتوفرة</b><p className="mt-1 text-xs text-white/65">للاستفسار عن الدفع عبر WhatsApp</p><div className="mt-3 flex flex-wrap gap-2">{payments.map(method=>{
+            {payments.length>0&&<div className="mt-5"><b className="text-sm">{store.paymentMethodsTitle||"طرق الدفع المتوفرة"}</b><p className="mt-1 text-xs text-white/65">{store.paymentMethodsSubtitle||"للاستفسار عن الدفع عبر WhatsApp"}</p><div className="mt-3 flex flex-wrap gap-2">{payments.map(method=>{
               const whatsapp=(store.whatsapp||"9647905068803").replace(/\D/g,"");
               const href=method.actionType==='whatsapp'?`https://wa.me/${whatsapp}?text=${encodeURIComponent(method.whatsappMessage||`مرحباً، أريد معرفة تفاصيل الدفع عن طريق ${method.name}.`)}`:method.actionType==='direct'&&method.directUrl?method.directUrl:undefined;
               const content=method.logoUrl?<img src={method.logoUrl} alt={method.name} className="h-9 w-16 object-contain"/>:<span className={`payment-brand ${method.name.toLowerCase().includes('zain')?'zain':'card'}`}>{method.name}</span>;

@@ -830,6 +830,8 @@ function SettingsForm({ settings, setSettings, save }: any) {
     ["lowStock", "حد المخزون القليل"],
     ["baghdadDeliveryFee", "أجرة توصيل بغداد (د.ع)"],
     ["provinceDeliveryFee", "أجرة توصيل باقي المحافظات (د.ع)"],
+    ["paymentMethodsTitle", "عنوان قسم طرق الدفع في نهاية الموقع"],
+    ["paymentMethodsSubtitle", "النص التوضيحي أسفل عنوان طرق الدفع"],
   ];
   return (
     <>

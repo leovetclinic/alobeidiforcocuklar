@@ -175,3 +175,23 @@ html { scroll-behavior:smooth; }
 .input { width:100%; margin-top:.35rem; border:1px solid #eadbe2; border-radius:.8rem; background:white; padding:.75rem 1rem; outline:none; }
 .input:focus { border-color:#e3a8ba; box-shadow:0 0 0 3px #f8dce6; }
 .btn-soft { display:flex; align-items:center; gap:.5rem; border-radius:.8rem; background:#dff0f8; padding:.65rem 1rem; font-weight:700; }
+
+/* Decorative only: this layer can never intercept product, cart or checkout taps. */
+.seasonal-effects-layer,.seasonal-effects-layer * { pointer-events:none!important; }
+.seasonal-particle { position:absolute; display:block; user-select:none; will-change:transform,opacity; animation-iteration-count:infinite; animation-timing-function:linear; }
+.seasonal-fall { animation-name:seasonal-fall; }
+.seasonal-float { top:auto!important; bottom:8%; animation-name:seasonal-float; animation-timing-function:ease-in-out; }
+.seasonal-sparkle { top:var(--particle-top,30%)!important; animation-name:seasonal-sparkle; animation-timing-function:ease-in-out; }
+.seasonal-drift { animation-name:seasonal-drift; animation-timing-function:ease-in-out; }
+.seasonal-particle.speed-slow { animation-duration:15s!important; }
+.seasonal-particle.speed-normal { animation-duration:10s!important; }
+.seasonal-particle.speed-fast { animation-duration:6s!important; }
+.payment-brand { display:grid; min-width:56px; place-items:center; font-size:10px; font-weight:900; line-height:1.05; text-align:center; }
+.payment-brand.zain { color:#6f287c; }
+.payment-brand.card { color:#173b78; }
+@keyframes seasonal-fall { 0%{transform:translate3d(0,-12vh,0) rotate(0)} 50%{transform:translate3d(24px,52vh,0) rotate(180deg)} 100%{transform:translate3d(-18px,112vh,0) rotate(360deg)} }
+@keyframes seasonal-float { 0%,100%{transform:translate3d(-12px,8px,0) rotate(-5deg)} 50%{transform:translate3d(18px,-55vh,0) rotate(10deg)} }
+@keyframes seasonal-sparkle { 0%,100%{transform:scale(.55) rotate(0);opacity:.15} 50%{transform:scale(1.15) rotate(120deg);opacity:1} }
+@keyframes seasonal-drift { 0%{transform:translate3d(-12vw,-8vh,0) rotate(0)} 100%{transform:translate3d(24vw,112vh,0) rotate(260deg)} }
+@media (max-width:767px) { .seasonal-mobile-extra { display:none; } }
+@media (prefers-reduced-motion:reduce) { .seasonal-particle { animation:none!important; } }

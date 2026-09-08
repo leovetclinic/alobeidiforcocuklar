@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SeasonalEffects, type SeasonalEffect } from "@/components/seasonal-effects";
 type Image = { imageUrl: string };
 type Variant = {
   id: number;
@@ -89,6 +90,7 @@ type BannerStyle = {
 };
 const defaultBannerStyle: BannerStyle = {imageWidth:"46",imageAspect:"portrait",imagePosition:"left",titleSize:"48",subtitleSize:"18",textAlign:"right",background:"#fff8f4",buttonBg:"#a9bb9d",buttonColor:"#ffffff",secondButtonBg:"#fff0ef",secondButtonColor:"#c47f84",buttonRadius:"999",animation:"slide-up",showStats:true,badgeText:"متجر ملابس الأطفال",secondButtonText:"اكتشف الأقسام",secondButtonLink:"#categories",stat1Value:"12-48",stat1Label:"ساعة للتوصيل",stat2Value:"تلقائي",stat2Label:"منتج متنوع",stat3Value:"تلقائي",stat3Label:"توصيل بغداد"};
 type Cart = { product: Product; variant: Variant; qty: number };
+type PaymentMethod={id:number;name:string;logoUrl:string|null;active:boolean;sortOrder:number;actionType:string;whatsappMessage:string|null;directUrl:string|null};
 const money = (n: number) => `${n.toLocaleString("en-US")} د.ع`;
 const governorates = ["بغداد","البصرة","نينوى","أربيل","السليمانية","دهوك","كركوك","الأنبار","صلاح الدين","ديالى","واسط","بابل","كربلاء","النجف","القادسية","المثنى","ذي قار","ميسان"];
 const sizeOptions = ["0-3 شهر","3-6 شهر","6-9 شهر","9-12 شهر","12-18 شهر","18-24 شهر","24-36 شهر"];
@@ -133,6 +135,10 @@ export default function Storefront() {
     [recentlyAdded, setRecentlyAdded] = useState<number | null>(null),
     [cartPulse, setCartPulse] = useState(false),
     [sizeGuideOpen, setSizeGuideOpen] = useState(false),
+    [effects, setEffects] = useState<SeasonalEffect[]>([]),
+    [effectsDisabled, setEffectsDisabled] = useState(false),
+    [payments, setPayments] = useState<PaymentMethod[]>([]),
+    [purchaseFocused, setPurchaseFocused] = useState(false),
     [loading, setLoading] = useState(true);
   useEffect(() => {
     Promise.all([
@@ -140,11 +146,16 @@ export default function Storefront() {
       fetch("/api/categories").then((r) => r.json()),
       fetch("/api/banners").then((r) => r.json()),
       fetch("/api/settings").then((r) => r.json()),
-    ]).then(([p, c, b, s]) => {
+      fetch("/api/seasonal-effects").then((r) => r.json()),
+      fetch("/api/payment-methods").then((r) => r.json()),
+    ]).then(([p, c, b, s, e, pm]) => {
       setProducts(p.products || []);
       setCategories(c.categories || []);
       setBanners(b.banners || []);
       setStore(s);
+      setEffects(e.effects || []);
+      setEffectsDisabled(!!e.disabled);
+      setPayments((pm.methods || []).filter((x:PaymentMethod)=>x.active));
       setTimeout(() => setLoading(false), 650);
     });
     const saved = localStorage.getItem("alobeidi_cart");
@@ -161,6 +172,11 @@ export default function Storefront() {
   useEffect(() => {
     localStorage.setItem("alobeidi_cart", JSON.stringify(cart));
   }, [cart]);
+  useEffect(()=>{
+    const cartSection=document.getElementById("cart");if(!cartSection)return;
+    const observer=new IntersectionObserver(([entry])=>setPurchaseFocused(entry.isIntersecting),{threshold:.08});
+    observer.observe(cartSection);return()=>observer.disconnect();
+  },[loading]);
   const shown = useMemo(() => {
     const categoryIds = category
       ? [
@@ -229,6 +245,7 @@ export default function Storefront() {
       className="store-theme min-h-screen pb-16 md:pb-0"
       style={{"--site-bg":store.themeBackground||"#fff9fb","--site-text":store.themeText||"#55434c","--site-primary":store.themePrimary||"#d58fa7","--site-secondary":store.themeSecondary||"#b56d86","--site-soft":store.themeSoft||"#f8dce6","--site-accent":store.themeAccent||"#dff0f8","--site-border":store.themeBorder||"#eadfd2","--site-footer":store.themeFooter||"#55434c",background:store.themeBackground||"#fff9fb",color:store.themeText||"#55434c"} as React.CSSProperties}
     >
+      <SeasonalEffects effects={effects} disabled={effectsDisabled} suppress={purchaseFocused}/>
       <header className="sticky top-0 z-40 border-b border-[#f0dce4] bg-[#fff9fb]/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <span className="md:hidden" aria-hidden="true"><Baby /></span>
@@ -632,16 +649,18 @@ export default function Storefront() {
               +964 790 506 8803
             </a>
           </div>
-          <div className="flex gap-4">
-            <a href={store.instagram} aria-label="Instagram">
-              <InstagramIcon />
-            </a>
-            <a href={store.facebook} aria-label="Facebook">
-              <FacebookIcon />
-            </a>
-            <a href={store.maps}>
-              <MapPin />
-            </a>
+          <div>
+            <div className="flex gap-4">
+              <a href={store.instagram} aria-label="Instagram"><InstagramIcon /></a>
+              <a href={store.facebook} aria-label="Facebook"><FacebookIcon /></a>
+              <a href={store.maps} aria-label="موقعنا على الخريطة"><MapPin /></a>
+            </div>
+            {payments.length>0&&<div className="mt-5"><b className="text-sm">طرق الدفع المتوفرة</b><p className="mt-1 text-xs text-white/65">للاستفسار عن الدفع عبر WhatsApp</p><div className="mt-3 flex flex-wrap gap-2">{payments.map(method=>{
+              const whatsapp=(store.whatsapp||"9647905068803").replace(/\D/g,"");
+              const href=method.actionType==='whatsapp'?`https://wa.me/${whatsapp}?text=${encodeURIComponent(method.whatsappMessage||`مرحباً، أريد معرفة تفاصيل الدفع عن طريق ${method.name}.`)}`:method.actionType==='direct'&&method.directUrl?method.directUrl:undefined;
+              const content=method.logoUrl?<img src={method.logoUrl} alt={method.name} className="h-9 w-16 object-contain"/>:<span className={`payment-brand ${method.name.toLowerCase().includes('zain')?'zain':'card'}`}>{method.name}</span>;
+              return href?<a key={method.id} href={href} target="_blank" rel="noreferrer" title={`استفسار عن ${method.name}`} className="grid h-12 min-w-20 place-items-center rounded-xl bg-white px-2 text-[#55434c] shadow-sm transition hover:-translate-y-0.5">{content}</a>:<span key={method.id} className="grid h-12 min-w-20 place-items-center rounded-xl bg-white px-2 text-[#55434c]">{content}</span>
+            })}</div></div>}
           </div>
         </div>
         <p className="mx-auto mt-8 max-w-7xl border-t border-white/15 pt-5 text-center text-sm text-white/75">{store.copyright||"© جميع الحقوق محفوظة للعبيدي لأناقة طفلك 2026."}</p>

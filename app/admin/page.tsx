@@ -842,6 +842,12 @@ function SettingsForm({ settings, setSettings, save }: any) {
           <a href="/admin/categories" className="btn-soft">
             الأقسام
           </a>
+          <a href="/admin/effects" className="btn-soft">
+            المؤثرات الموسمية
+          </a>
+          <a href="/admin/payments" className="btn-soft">
+            طرق الدفع
+          </a>
         </div>
       </div>
       <form

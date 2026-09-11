@@ -193,5 +193,17 @@ html { scroll-behavior:smooth; }
 @keyframes seasonal-float { 0%,100%{transform:translate3d(-12px,8px,0) rotate(-5deg)} 50%{transform:translate3d(18px,-55vh,0) rotate(10deg)} }
 @keyframes seasonal-sparkle { 0%,100%{transform:scale(.55) rotate(0);opacity:.15} 50%{transform:scale(1.15) rotate(120deg);opacity:1} }
 @keyframes seasonal-drift { 0%{transform:translate3d(-12vw,-8vh,0) rotate(0)} 100%{transform:translate3d(24vw,112vh,0) rotate(260deg)} }
-@media (max-width:767px) { .seasonal-mobile-extra { display:none; } }
+@media (max-width:767px) {
+  .seasonal-mobile-extra { display:none; }
+  /* Product cards must render immediately on phones; never leave an empty products area
+     while IntersectionObserver or image loading catches up. */
+  #products .scroll-reveal,
+  #products .scroll-reveal.is-visible {
+    opacity:1;
+    transform:none;
+    transition:none;
+    transition-delay:0ms;
+    will-change:auto;
+  }
+}
 @media (prefers-reduced-motion:reduce) { .seasonal-particle { animation:none!important; } }

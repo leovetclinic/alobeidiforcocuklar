@@ -140,6 +140,7 @@ export default function Storefront() {
     [cartPulse, setCartPulse] = useState(false),
     [sizeGuideOpen, setSizeGuideOpen] = useState(false),
     [mobileMenuOpen, setMobileMenuOpen] = useState(false),
+    [menuCategoriesOpen, setMenuCategoriesOpen] = useState(false),
     [effects, setEffects] = useState<SeasonalEffect[]>([]),
     [effectsDisabled, setEffectsDisabled] = useState(false),
     [payments, setPayments] = useState<PaymentMethod[]>([]),
@@ -243,6 +244,11 @@ export default function Storefront() {
     setCategory(null);
     document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
   }
+  function home() {
+    setMode("all");
+    setCategory(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
   if (loading) return <div dir="rtl" className="fixed inset-0 grid place-items-center bg-[#fff9f6] text-center text-[#65585b]"><div>{store.logo?<img src={store.logo} className="mx-auto size-32 rounded-full border-4 border-white object-cover shadow-lg" alt="شعار العبيدي"/>:<span className="mx-auto grid size-28 place-items-center rounded-full bg-[#f8dce6]"><Baby size={52}/></span>}<b className="mt-6 block text-2xl tracking-[.2em]">ALOBEIDI</b><div className="my-5 flex justify-center gap-3"><i className="size-3 animate-bounce rounded-full bg-[#c9d9bd]"/><i className="size-3 animate-bounce rounded-full bg-[#b7dbea] [animation-delay:150ms]"/><i className="size-3 animate-bounce rounded-full bg-[#e8b7c5] [animation-delay:300ms]"/></div><p className="text-lg font-bold">نجهز لك المتجر بلمسة ناعمة وسريعة.. يرجى الانتظار لطفاً</p></div></div>;
   return (
     <div
@@ -339,8 +345,12 @@ export default function Storefront() {
               <button aria-label="إغلاق" onClick={()=>setMobileMenuOpen(false)} className="grid size-10 place-items-center rounded-full border bg-white"><X/></button>
             </div>
             <nav className="grid gap-3 text-right text-lg font-black">
-              <button onClick={()=>{setMobileMenuOpen(false);go("all")}} className="rounded-2xl bg-[#f8dce6] px-5 py-4">الرئيسية</button>
-              <button onClick={()=>{setMobileMenuOpen(false);setTimeout(()=>document.getElementById("categories")?.scrollIntoView({behavior:"smooth"}),50)}} className="rounded-2xl border bg-white px-5 py-4">الأقسام</button>
+              <button onClick={()=>{setMobileMenuOpen(false);home()}} className="rounded-2xl bg-[#f8dce6] px-5 py-4">الرئيسية</button>
+              <button onClick={()=>setMenuCategoriesOpen(x=>!x)} className="flex items-center justify-between rounded-2xl border bg-white px-5 py-4"><span>الأقسام</span><ChevronLeft className={`transition-transform duration-300 ${menuCategoriesOpen?"-rotate-90":""}`}/></button>
+              <div className={`grid overflow-hidden transition-all duration-500 ease-out ${menuCategoriesOpen?"max-h-[65vh] gap-2 opacity-100":"max-h-0 opacity-0"}`}>
+                <button onClick={()=>{setMobileMenuOpen(false);go("all")}} className="rounded-xl bg-[#f8dce6]/70 px-5 py-3 text-base">كل المنتجات</button>
+                {categories.filter(c=>!c.parentId).map(c=><button key={c.id} onClick={()=>{setMobileMenuOpen(false);filterCategory(c.id)}} className="flex items-center gap-3 rounded-xl border bg-white px-5 py-3 text-base"><span className="text-xl">{c.icon||"🧸"}</span><span>{c.name}</span></button>)}
+              </div>
               <button onClick={()=>{setMobileMenuOpen(false);go("offers")}} className="rounded-2xl border bg-white px-5 py-4">العروض</button>
               <button onClick={()=>{setMobileMenuOpen(false);setTimeout(()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"}),50)}} className="rounded-2xl border bg-white px-5 py-4">تتبع الطلب</button>
               {sizeGuideRows.length>0&&<button onClick={()=>{setMobileMenuOpen(false);setSizeGuideOpen(true)}} className="rounded-2xl border bg-white px-5 py-4">دليل المقاسات</button>}
@@ -662,8 +672,8 @@ export default function Storefront() {
         <p className="mx-auto mt-8 max-w-7xl border-t border-white/15 pt-5 text-center text-sm text-white/75">{store.copyright||"© جميع الحقوق محفوظة للعبيدي لأناقة طفلك 2026."}</p>
       </footer>
       {!detail&&<nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-[70] grid grid-cols-5 rounded-t-[2rem] border-t border-[#eadfd2] bg-[#f1e6dc]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 text-[#65585b] shadow-[0_-8px_30px_rgba(70,55,48,.12)] backdrop-blur md:hidden">
-        <button onClick={()=>go("all")} className={`grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black ${mode==="all"&&!category?"bg-white/60 text-[#7d9874]":""}`}><Baby size={23}/><span>الرئيسية</span></button>
-        <button onClick={()=>document.getElementById("categories")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
+        <button onClick={home} className={`grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black ${mode==="all"&&!category?"bg-white/60 text-[#7d9874]":""}`}><Baby size={23}/><span>الرئيسية</span></button>
+        <button onClick={()=>{setMenuCategoriesOpen(true);setMobileMenuOpen(true)}} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
         <button onClick={()=>go("all")} className="grid place-items-center gap-1 rounded-2xl bg-white/55 px-1 py-2 text-[11px] font-black text-[#7d9874]"><Search size={23}/><span>تسوق الآن</span></button>
         <a href="#cart" className="relative grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><ShoppingBag size={23}/><span>السلة</span>{cart.length>0&&<b className="absolute left-2 top-1 grid size-5 place-items-center rounded-full bg-[#cf858e] text-[10px] text-white">{cart.length}</b>}</a>
         <button onClick={()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><PackageSearch size={23}/><span>تتبع</span></button>

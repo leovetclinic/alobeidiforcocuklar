@@ -462,7 +462,7 @@ export default function Storefront() {
               حالياً ما عدنا منتجات بهذا القسم... ترقبوا الجديد 🤍
             </p>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
               {shown.map((p) => {
                 const v = choose(p);
                 const soldOut = p.variants.every((x) => x.stock < 1);

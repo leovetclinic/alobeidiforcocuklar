@@ -10,6 +10,7 @@ import {
   Plus,
   Minus,
   X,
+  Menu,
   ChevronLeft,
   PackageSearch,
   Truck,
@@ -135,6 +136,7 @@ export default function Storefront() {
     [recentlyAdded, setRecentlyAdded] = useState<number | null>(null),
     [cartPulse, setCartPulse] = useState(false),
     [sizeGuideOpen, setSizeGuideOpen] = useState(false),
+    [mobileMenuOpen, setMobileMenuOpen] = useState(false),
     [effects, setEffects] = useState<SeasonalEffect[]>([]),
     [effectsDisabled, setEffectsDisabled] = useState(false),
     [payments, setPayments] = useState<PaymentMethod[]>([]),
@@ -248,7 +250,7 @@ export default function Storefront() {
       <SeasonalEffects effects={effects} disabled={effectsDisabled} suppress={purchaseFocused}/>
       <header className="sticky top-0 z-40 border-b border-[#f0dce4] bg-[#fff9fb]/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <span className="md:hidden" aria-hidden="true"><Baby /></span>
+          <button type="button" aria-label="فتح القائمة" aria-expanded={mobileMenuOpen} onClick={()=>setMobileMenuOpen(true)} className="grid size-11 place-items-center rounded-2xl border border-[#eadfd2] bg-white shadow-sm md:hidden"><Menu size={27}/></button>
           <a href="#home" className="flex items-center gap-2 font-black">
             {store.logo ? (
               <img
@@ -325,13 +327,22 @@ export default function Storefront() {
             </div>
           )}
         </div>
-        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 pb-3 md:hidden">
-          <button onClick={()=>go("all")} className="shrink-0 rounded-full bg-[#f8dce6] px-4 py-2 font-bold">الرئيسية</button>
-          <button onClick={()=>document.getElementById("categories")?.scrollIntoView({behavior:"smooth"})} className="shrink-0 rounded-full border bg-white px-4 py-2 font-bold">الأقسام</button>
-          <button onClick={()=>go("offers")} className="shrink-0 rounded-full border bg-white px-4 py-2 font-bold">العروض</button>
-          <button onClick={()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"})} className="shrink-0 rounded-full border bg-white px-4 py-2 font-bold">تتبع الطلب</button>
-          {sizeGuideRows.length>0&&<button onClick={()=>setSizeGuideOpen(true)} className="shrink-0 rounded-full border bg-white px-4 py-2 font-bold">دليل المقاسات</button>}
-        </div>
+        {mobileMenuOpen&&<div className="fixed inset-0 z-[100] md:hidden">
+          <button aria-label="إغلاق القائمة" onClick={()=>setMobileMenuOpen(false)} className="absolute inset-0 bg-[#3c3035]/45 backdrop-blur-[2px]"/>
+          <aside className="absolute right-0 top-0 flex h-full w-[82%] max-w-sm flex-col bg-[#fff9fb] p-5 shadow-2xl">
+            <div className="mb-7 flex items-center justify-between border-b border-[#eadfd2] pb-4">
+              <b className="text-xl">قائمة المتجر</b>
+              <button aria-label="إغلاق" onClick={()=>setMobileMenuOpen(false)} className="grid size-10 place-items-center rounded-full border bg-white"><X/></button>
+            </div>
+            <nav className="grid gap-3 text-right text-lg font-black">
+              <button onClick={()=>{setMobileMenuOpen(false);go("all")}} className="rounded-2xl bg-[#f8dce6] px-5 py-4">الرئيسية</button>
+              <button onClick={()=>{setMobileMenuOpen(false);setTimeout(()=>document.getElementById("categories")?.scrollIntoView({behavior:"smooth"}),50)}} className="rounded-2xl border bg-white px-5 py-4">الأقسام</button>
+              <button onClick={()=>{setMobileMenuOpen(false);go("offers")}} className="rounded-2xl border bg-white px-5 py-4">العروض</button>
+              <button onClick={()=>{setMobileMenuOpen(false);setTimeout(()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"}),50)}} className="rounded-2xl border bg-white px-5 py-4">تتبع الطلب</button>
+              {sizeGuideRows.length>0&&<button onClick={()=>{setMobileMenuOpen(false);setSizeGuideOpen(true)}} className="rounded-2xl border bg-white px-5 py-4">دليل المقاسات</button>}
+            </nav>
+          </aside>
+        </div>}
       </header>
       <main id="home">
         <section className="mx-auto max-w-7xl px-4 py-12 text-center">

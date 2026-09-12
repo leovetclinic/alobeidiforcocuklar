@@ -234,20 +234,29 @@ export default function Storefront() {
     setTimeout(()=>setRecentlyAdded(null),1400);
     setTimeout(()=>setCartPulse(false),550);
   }
+  function scrollToSection(id: string, delay = 100) {
+    window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => {
+      const element = document.getElementById(id);
+      if (!element) return;
+      const header = document.querySelector<HTMLElement>("[data-store-header]");
+      const top = element.getBoundingClientRect().top + window.scrollY - (header?.offsetHeight || 0) - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    })), delay);
+  }
   function filterCategory(id: number) {
     setCategory(id);
     setMode("all");
-    document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+    scrollToSection("products");
   }
   function go(m: "all" | "offers" | "new") {
     setMode(m);
     setCategory(null);
-    document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+    scrollToSection("products");
   }
   function home() {
     setMode("all");
     setCategory(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   }
   if (loading) return <div dir="rtl" className="fixed inset-0 grid place-items-center bg-[#fff9f6] text-center text-[#65585b]"><div>{store.logo?<img src={store.logo} className="mx-auto size-32 rounded-full border-4 border-white object-cover shadow-lg" alt="شعار العبيدي"/>:<span className="mx-auto grid size-28 place-items-center rounded-full bg-[#f8dce6]"><Baby size={52}/></span>}<b className="mt-6 block text-2xl tracking-[.2em]">ALOBEIDI</b><div className="my-5 flex justify-center gap-3"><i className="size-3 animate-bounce rounded-full bg-[#c9d9bd]"/><i className="size-3 animate-bounce rounded-full bg-[#b7dbea] [animation-delay:150ms]"/><i className="size-3 animate-bounce rounded-full bg-[#e8b7c5] [animation-delay:300ms]"/></div><p className="text-lg font-bold">نجهز لك المتجر بلمسة ناعمة وسريعة.. يرجى الانتظار لطفاً</p></div></div>;
   return (
@@ -257,7 +266,7 @@ export default function Storefront() {
       style={{"--site-bg":store.themeBackground||"#fff9fb","--site-text":store.themeText||"#55434c","--site-primary":store.themePrimary||"#d58fa7","--site-secondary":store.themeSecondary||"#b56d86","--site-soft":store.themeSoft||"#f8dce6","--site-accent":store.themeAccent||"#dff0f8","--site-border":store.themeBorder||"#eadfd2","--site-footer":store.themeFooter||"#55434c",background:store.themeBackground||"#fff9fb",color:store.themeText||"#55434c"} as React.CSSProperties}
     >
       <SeasonalEffects effects={effects} disabled={effectsDisabled} suppress={purchaseFocused}/>
-      <header className="sticky top-0 z-40 border-b border-[#f0dce4] bg-[#fff9fb]/95 backdrop-blur">
+      <header data-store-header className="sticky top-0 z-40 border-b border-[#f0dce4] bg-[#fff9fb]/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <button type="button" aria-label="فتح القائمة" aria-expanded={mobileMenuOpen} onClick={()=>setMobileMenuOpen(true)} className="grid size-11 place-items-center rounded-2xl border border-[#eadfd2] bg-white shadow-sm md:hidden"><Menu size={27}/></button>
           <a href="#home" className="flex items-center gap-2 font-black">
@@ -278,15 +287,13 @@ export default function Storefront() {
             <button onClick={() => go("all")}>الرئيسية</button>
             <button
               onClick={() =>
-                document
-                  .getElementById("categories")
-                  ?.scrollIntoView({ behavior: "smooth" })
+                scrollToSection("categories", 0)
               }
             >
               الأقسام
             </button>
             <button onClick={() => go("offers")}>العروض</button>
-            <button onClick={() => document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"})}>تتبع الطلب</button>
+            <button onClick={() => scrollToSection("track-order")}>تتبع الطلب</button>
             {sizeGuideRows.length>0&&<button onClick={()=>setSizeGuideOpen(true)}>دليل المقاسات</button>}
           </nav>
           <div className="flex gap-4">
@@ -456,7 +463,7 @@ export default function Storefront() {
                 ? "أحدث المنتجات"
                 : "اختيارات لصغيرك"}
           </h2>
-          {mode === "all" && <div className="mb-6 grid gap-3 rounded-3xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-3">
+          {mode === "all" && !category && <div className="mb-6 grid gap-3 rounded-3xl border bg-white p-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="flex items-center gap-2 rounded-2xl border px-3"><Search size={20}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="ابحث بالاسم أو الكود" className="w-full py-3 outline-none"/></label>
             <select value={filterGender} onChange={e=>setFilterGender(e.target.value)} className="input"><option value="">كل الأنواع</option><option>بناتي</option><option>ولادي</option><option>مشترك</option></select>
             <select value={filterColor} onChange={e=>setFilterColor(e.target.value)} className="input"><option value="">كل الألوان</option>{colors.map(c=><option key={c}>{c}</option>)}</select>
@@ -673,7 +680,7 @@ export default function Storefront() {
       </footer>
       {!detail&&<nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-[70] grid grid-cols-5 rounded-t-[2rem] border-t border-[#eadfd2] bg-[#f1e6dc]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 text-[#65585b] shadow-[0_-8px_30px_rgba(70,55,48,.12)] backdrop-blur md:hidden">
         <button onClick={home} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Baby size={23}/><span>الرئيسية</span></button>
-        <button onClick={()=>document.getElementById("categories")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
+        <button onClick={()=>scrollToSection("categories", 0)} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
         <button onClick={()=>go("all")} className="grid place-items-center gap-1 rounded-2xl bg-white/55 px-1 py-2 text-[11px] font-black text-[#b56d86]"><Search size={23}/><span>تسوق الآن</span></button>
         <a href="#cart" className="relative grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><ShoppingBag size={23}/><span>السلة</span>{cart.length>0&&<b className="absolute left-2 top-1 grid size-5 place-items-center rounded-full bg-[#cf858e] text-[10px] text-white">{cart.length}</b>}</a>
         <button onClick={()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><PackageSearch size={23}/><span>تتبع</span></button>

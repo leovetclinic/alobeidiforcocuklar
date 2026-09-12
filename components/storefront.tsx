@@ -244,7 +244,7 @@ export default function Storefront() {
   return (
     <div
       dir="rtl"
-      className="store-theme min-h-screen pb-16 md:pb-0"
+      className="store-theme min-h-screen pb-24 md:pb-0"
       style={{"--site-bg":store.themeBackground||"#fff9fb","--site-text":store.themeText||"#55434c","--site-primary":store.themePrimary||"#d58fa7","--site-secondary":store.themeSecondary||"#b56d86","--site-soft":store.themeSoft||"#f8dce6","--site-accent":store.themeAccent||"#dff0f8","--site-border":store.themeBorder||"#eadfd2","--site-footer":store.themeFooter||"#55434c",background:store.themeBackground||"#fff9fb",color:store.themeText||"#55434c"} as React.CSSProperties}
     >
       <SeasonalEffects effects={effects} disabled={effectsDisabled} suppress={purchaseFocused}/>
@@ -676,8 +676,15 @@ export default function Storefront() {
         </div>
         <p className="mx-auto mt-8 max-w-7xl border-t border-white/15 pt-5 text-center text-sm text-white/75">{store.copyright||"© جميع الحقوق محفوظة للعبيدي لأناقة طفلك 2026."}</p>
       </footer>
+      <nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-[70] grid grid-cols-5 rounded-t-[2rem] border-t border-[#eadfd2] bg-[#f1e6dc]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 text-[#65585b] shadow-[0_-8px_30px_rgba(70,55,48,.12)] backdrop-blur md:hidden">
+        <button onClick={()=>go("all")} className={`grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black ${mode==="all"&&!category?"bg-white/60 text-[#7d9874]":""}`}><Baby size={23}/><span>الرئيسية</span></button>
+        <button onClick={()=>document.getElementById("categories")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
+        <button onClick={()=>go("all")} className="grid place-items-center gap-1 rounded-2xl bg-white/55 px-1 py-2 text-[11px] font-black text-[#7d9874]"><Search size={23}/><span>تسوق الآن</span></button>
+        <a href="#cart" className="relative grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><ShoppingBag size={23}/><span>السلة</span>{cart.length>0&&<b className="absolute left-2 top-1 grid size-5 place-items-center rounded-full bg-[#cf858e] text-[10px] text-white">{cart.length}</b>}</a>
+        <button onClick={()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><PackageSearch size={23}/><span>تتبع</span></button>
+      </nav>
       <a
-        className="fixed bottom-20 left-4 grid size-14 place-items-center rounded-full bg-[#25d366] text-white md:bottom-5"
+        className="fixed bottom-24 left-4 z-[75] grid size-14 place-items-center rounded-full bg-[#25d366] text-white shadow-lg md:bottom-5"
         href={`https://wa.me/${store.whatsapp || "9647905068803"}`}
       >
         <MessageCircle />

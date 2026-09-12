@@ -359,7 +359,7 @@ export default function Storefront() {
                 {categories.filter(c=>!c.parentId).map(c=><button key={c.id} onClick={()=>{setMobileMenuOpen(false);filterCategory(c.id)}} className="flex items-center gap-3 rounded-xl border bg-white px-5 py-3 text-base"><span className="text-xl">{c.icon||"🧸"}</span><span>{c.name}</span></button>)}
               </div>
               <button onClick={()=>{setMobileMenuOpen(false);go("offers")}} className="rounded-2xl border bg-white px-5 py-4">العروض</button>
-              <button onClick={()=>{setMobileMenuOpen(false);setTimeout(()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"}),50)}} className="rounded-2xl border bg-white px-5 py-4">تتبع الطلب</button>
+              <button onClick={()=>{setMobileMenuOpen(false);scrollToSection("track-order", 150)}} className="rounded-2xl border bg-white px-5 py-4">تتبع الطلب</button>
               {sizeGuideRows.length>0&&<button onClick={()=>{setMobileMenuOpen(false);setSizeGuideOpen(true)}} className="rounded-2xl border bg-white px-5 py-4">دليل المقاسات</button>}
             </nav>
           </aside>
@@ -683,7 +683,7 @@ export default function Storefront() {
         <button onClick={()=>scrollToSection("categories", 0)} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
         <button onClick={()=>go("all")} className="grid place-items-center gap-1 rounded-2xl bg-white/55 px-1 py-2 text-[11px] font-black text-[#b56d86]"><Search size={23}/><span>تسوق الآن</span></button>
         <a href="#cart" className="relative grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><ShoppingBag size={23}/><span>السلة</span>{cart.length>0&&<b className="absolute left-2 top-1 grid size-5 place-items-center rounded-full bg-[#cf858e] text-[10px] text-white">{cart.length}</b>}</a>
-        <button onClick={()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><PackageSearch size={23}/><span>تتبع</span></button>
+        <button onClick={()=>scrollToSection("track-order", 0)} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><PackageSearch size={23}/><span>تتبع</span></button>
       </nav>}
       {!detail&&<a
         className="fixed bottom-24 left-4 z-[75] grid size-14 place-items-center rounded-full bg-[#25d366] text-white shadow-lg md:bottom-5"

@@ -95,6 +95,8 @@ type BannerStyle = {
 const defaultBannerStyle: BannerStyle = {imageWidth:"46",imageAspect:"portrait",imagePosition:"left",titleSize:"48",subtitleSize:"18",textAlign:"right",background:"#fff8f4",buttonBg:"#a9bb9d",buttonColor:"#ffffff",secondButtonBg:"#fff0ef",secondButtonColor:"#c47f84",buttonRadius:"999",animation:"slide-up",showStats:true,badgeText:"متجر ملابس الأطفال",secondButtonText:"اكتشف الأقسام",secondButtonLink:"#categories",stat1Value:"12-48",stat1Label:"ساعة للتوصيل",stat2Value:"تلقائي",stat2Label:"منتج متنوع",stat3Value:"تلقائي",stat3Label:"توصيل بغداد"};
 type Cart = { product: Product; variant: Variant; qty: number };
 type PaymentMethod={id:number;name:string;logoUrl:string|null;active:boolean;sortOrder:number;actionType:string;whatsappMessage:string|null;directUrl:string|null};
+type BottomNavItem={id:string;label:string;icon:string;action:"home"|"categories"|"products"|"cart"|"tracking"|"category";target?:string;active?:boolean};
+const defaultBottomNavItems:BottomNavItem[]=[{id:"home",label:"الرئيسية",icon:"⌂",action:"home",active:true},{id:"categories",label:"الأقسام",icon:"☰",action:"categories",active:true},{id:"shop",label:"تسوق الآن",icon:"⌕",action:"products",active:true},{id:"cart",label:"السلة",icon:"🛍",action:"cart",active:true},{id:"tracking",label:"تتبع",icon:"⌖",action:"tracking",active:true}];
 const money = (n: number) => `${n.toLocaleString("en-US")} د.ع`;
 const governorates = ["بغداد","البصرة","نينوى","أربيل","السليمانية","دهوك","كركوك","الأنبار","صلاح الدين","ديالى","واسط","بابل","كربلاء","النجف","القادسية","المثنى","ذي قار","ميسان"];
 const sizeOptions = ["0-3 شهر","3-6 شهر","6-9 شهر","9-12 شهر","12-18 شهر","18-24 شهر","24-36 شهر"];
@@ -140,6 +142,7 @@ export default function Storefront() {
     [cartPulse, setCartPulse] = useState(false),
     [sizeGuideOpen, setSizeGuideOpen] = useState(false),
     [mobileMenuOpen, setMobileMenuOpen] = useState(false),
+    [bottomActive, setBottomActive] = useState(""),
     [menuCategoriesOpen, setMenuCategoriesOpen] = useState(false),
     [effects, setEffects] = useState<SeasonalEffect[]>([]),
     [effectsDisabled, setEffectsDisabled] = useState(false),
@@ -209,6 +212,7 @@ export default function Storefront() {
   }, [products, categories, query, category, mode, filterGender, filterColor, filterSize, sortBy]);
   const colors=useMemo(()=>Array.from(new Set(products.flatMap(p=>p.variants.map(v=>v.colorName).filter(Boolean) as string[]))),[products]);
   const sizes=useMemo(()=>Array.from(new Set([...sizeOptions,...products.flatMap(p=>p.variants.map(v=>v.size||v.age).filter(Boolean) as string[])])),[products]);
+  const bottomNavItems=useMemo<BottomNavItem[]>(()=>{try{const parsed=JSON.parse(store.bottomNavItems||"[]");return Array.isArray(parsed)&&parsed.length?parsed.filter((x:BottomNavItem)=>x.active!==false):defaultBottomNavItems}catch{return defaultBottomNavItems}},[store.bottomNavItems]);
   const suggestions = query ? shown.slice(0, 5) : [];
   const total = cart.reduce((s, x) => s + x.product.price * x.qty, 0);
   const sizeGuideRows=(store.sizeGuide||"").split("\n").map(line=>line.split("|").map(x=>x.trim())).filter(row=>row[0]);
@@ -257,6 +261,15 @@ export default function Storefront() {
     setMode("all");
     setCategory(null);
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+  }
+  function useBottomItem(item: BottomNavItem) {
+    setBottomActive(item.id);
+    if(item.action==="home") return home();
+    if(item.action==="categories") return scrollToSection("categories",0);
+    if(item.action==="products") return go("all");
+    if(item.action==="cart") return scrollToSection("cart",0);
+    if(item.action==="tracking") return scrollToSection("track-order",0);
+    if(item.action==="category"&&item.target) return filterCategory(+item.target);
   }
   if (loading) return <div dir="rtl" className="fixed inset-0 grid place-items-center bg-[#fff9f6] text-center text-[#65585b]"><div>{store.logo?<img src={store.logo} className="mx-auto size-32 rounded-full border-4 border-white object-cover shadow-lg" alt="شعار العبيدي"/>:<span className="mx-auto grid size-28 place-items-center rounded-full bg-[#f8dce6]"><Baby size={52}/></span>}<b className="mt-6 block text-2xl tracking-[.2em]">ALOBEIDI</b><div className="my-5 flex justify-center gap-3"><i className="size-3 animate-bounce rounded-full bg-[#c9d9bd]"/><i className="size-3 animate-bounce rounded-full bg-[#b7dbea] [animation-delay:150ms]"/><i className="size-3 animate-bounce rounded-full bg-[#e8b7c5] [animation-delay:300ms]"/></div><p className="text-lg font-bold">نجهز لك المتجر بلمسة ناعمة وسريعة.. يرجى الانتظار لطفاً</p></div></div>;
   return (
@@ -678,12 +691,8 @@ export default function Storefront() {
         </div>
         <p className="mx-auto mt-8 max-w-7xl border-t border-white/15 pt-5 text-center text-sm text-white/75">{store.copyright||"© جميع الحقوق محفوظة للعبيدي لأناقة طفلك 2026."}</p>
       </footer>
-      {!detail&&<nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-[70] grid grid-cols-5 rounded-t-[2rem] border-t border-[#eadfd2] bg-[#f1e6dc]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 text-[#65585b] shadow-[0_-8px_30px_rgba(70,55,48,.12)] backdrop-blur md:hidden">
-        <button onClick={home} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Baby size={23}/><span>الرئيسية</span></button>
-        <button onClick={()=>scrollToSection("categories", 0)} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
-        <button onClick={()=>go("all")} className="grid place-items-center gap-1 rounded-2xl bg-white/55 px-1 py-2 text-[11px] font-black text-[#b56d86]"><Search size={23}/><span>تسوق الآن</span></button>
-        <a href="#cart" className="relative grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><ShoppingBag size={23}/><span>السلة</span>{cart.length>0&&<b className="absolute left-2 top-1 grid size-5 place-items-center rounded-full bg-[#cf858e] text-[10px] text-white">{cart.length}</b>}</a>
-        <button onClick={()=>scrollToSection("track-order", 0)} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><PackageSearch size={23}/><span>تتبع</span></button>
+      {!detail&&<nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-[70] grid rounded-t-[2rem] border-t border-[#eadfd2] bg-[#f1e6dc]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 text-[#65585b] shadow-[0_-8px_30px_rgba(70,55,48,.12)] backdrop-blur md:hidden" style={{gridTemplateColumns:`repeat(${Math.max(1,bottomNavItems.length)},minmax(0,1fr))`}}>
+        {bottomNavItems.map(item=><button key={item.id} onClick={()=>useBottomItem(item)} className={`relative grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black transition-colors duration-200 ${bottomActive===item.id?"bg-white/65 text-[#b56d86]":"text-[#65585b]"}`}><span className="text-[23px] leading-none">{item.icon||"•"}</span><span className="max-w-full truncate">{item.label}</span>{item.action==="cart"&&cart.length>0&&<b className="absolute left-2 top-1 grid size-5 place-items-center rounded-full bg-[#cf858e] text-[10px] text-white">{cart.length}</b>}</button>)}
       </nav>}
       {!detail&&<a
         className="fixed bottom-24 left-4 z-[75] grid size-14 place-items-center rounded-full bg-[#25d366] text-white shadow-lg md:bottom-5"

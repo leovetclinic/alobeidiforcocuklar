@@ -796,6 +796,14 @@ function Filters({
 }
 function SettingsForm({ settings, setSettings, save }: any) {
   const [passwordMessage,setPasswordMessage]=useState("");
+  const [navCategories,setNavCategories]=useState<Cat[]>([]);
+  useEffect(()=>{fetch("/api/categories?admin=1").then(r=>r.json()).then(x=>setNavCategories(x.categories||[])).catch(()=>{})},[]);
+  const defaultNavItems=[{id:"home",label:"الرئيسية",icon:"⌂",action:"home",active:true},{id:"categories",label:"الأقسام",icon:"☰",action:"categories",active:true},{id:"shop",label:"تسوق الآن",icon:"⌕",action:"products",active:true},{id:"cart",label:"السلة",icon:"🛍",action:"cart",active:true},{id:"tracking",label:"تتبع",icon:"⌖",action:"tracking",active:true}];
+  const navItems=useMemo(()=>{try{const x=JSON.parse(settings.bottomNavItems||"[]");return Array.isArray(x)&&x.length?x:defaultNavItems}catch{return defaultNavItems}},[settings.bottomNavItems]);
+  const setNavItems=(items:any[])=>setSettings({...settings,bottomNavItems:JSON.stringify(items)});
+  const changeNavItem=(id:string,key:string,value:any)=>setNavItems(navItems.map((x:any)=>x.id===id?{...x,[key]:value}:x));
+  const moveNavItem=(index:number,dir:number)=>{const target=index+dir;if(target<0||target>=navItems.length)return;const next=[...navItems];[next[index],next[target]]=[next[target],next[index]];setNavItems(next)};
+
   const [passwordBusy,setPasswordBusy]=useState(false);
   async function changePassword(e:React.FormEvent<HTMLFormElement>){
     e.preventDefault();setPasswordBusy(true);setPasswordMessage("");
@@ -913,6 +921,18 @@ function SettingsForm({ settings, setSettings, save }: any) {
             onChange={(e) => setSettings({ ...settings, shippingTerms: e.target.value })}
           />
         </label>
+        <section className="rounded-2xl bg-[#fff9fb] p-4 md:col-span-2">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-xl font-black">الشريط الثابت أسفل الهاتف</h3><p className="text-sm text-stone-500">عدّل الاسم والأيقونة والوظيفة، أو أضف زراً يفتح قسماً معيناً.</p></div><button type="button" onClick={()=>setNavItems([...navItems,{id:"nav-"+Date.now(),label:"زر جديد",icon:"⭐",action:"category",target:"",active:true}])} className="btn-soft"><Plus/> إضافة زر</button></div>
+          <div className="space-y-3">{navItems.map((item:any,index:number)=><div key={item.id} className="grid items-end gap-3 rounded-2xl border bg-white p-3 md:grid-cols-6">
+            <label>الاسم<input className="input" value={item.label||""} onChange={e=>changeNavItem(item.id,"label",e.target.value)}/></label>
+            <label>الأيقونة أو الإيموجي<input className="input text-xl" value={item.icon||""} onChange={e=>changeNavItem(item.id,"icon",e.target.value)} placeholder="⭐"/></label>
+            <label>وظيفة الزر<select className="input" value={item.action||"category"} onChange={e=>changeNavItem(item.id,"action",e.target.value)}><option value="home">بداية الصفحة</option><option value="categories">أقسام الواجهة</option><option value="products">كل المنتجات</option><option value="cart">السلة</option><option value="tracking">تتبع الطلب</option><option value="category">قسم معين</option></select></label>
+            {item.action==="category"?<label>اختر القسم<select className="input" value={item.target||""} onChange={e=>changeNavItem(item.id,"target",e.target.value)}><option value="">اختر القسم</option>{navCategories.filter(x=>!x.parentId).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>:<span/>}
+            <label className="flex items-center gap-2 pb-3"><input type="checkbox" checked={item.active!==false} onChange={e=>changeNavItem(item.id,"active",e.target.checked)}/> ظاهر</label>
+            <div className="flex gap-1"><button type="button" onClick={()=>moveNavItem(index,-1)} className="rounded-xl border px-3 py-2">↑</button><button type="button" onClick={()=>moveNavItem(index,1)} className="rounded-xl border px-3 py-2">↓</button><button type="button" onClick={()=>setNavItems(navItems.filter((x:any)=>x.id!==item.id))} className="rounded-xl bg-red-50 px-3 py-2 text-red-600"><Trash2 size={18}/></button></div>
+          </div>)}</div>
+          <button type="button" onClick={()=>setNavItems(defaultNavItems)} className="mt-3 rounded-xl border bg-white px-4 py-2 font-bold">إرجاع الشريط الافتراضي</button>
+        </section>
         <button className="rounded-xl bg-[#d58fa7] py-3 font-bold text-white md:col-span-2">
           حفظ الإعدادات
         </button>

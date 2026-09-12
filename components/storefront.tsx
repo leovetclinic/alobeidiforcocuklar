@@ -53,6 +53,9 @@ type Category = {
   id: number;
   name: string;
   icon: string;
+  imageUrl?: string | null;
+  displayShape?: string | null;
+  displayMode?: string | null;
   parentId: number | null;
 };
 type Banner = {
@@ -327,9 +330,10 @@ export default function Storefront() {
             </div>
           )}
         </div>
-        {mobileMenuOpen&&<div className="fixed inset-0 z-[100] md:hidden">
-          <button aria-label="إغلاق القائمة" onClick={()=>setMobileMenuOpen(false)} className="absolute inset-0 bg-[#3c3035]/45 backdrop-blur-[2px]"/>
-          <aside className="absolute right-0 top-0 flex h-full w-[82%] max-w-sm flex-col bg-[#fff9fb] p-5 shadow-2xl">
+              </header>
+      {mobileMenuOpen&&<div className="mobile-menu-overlay fixed inset-0 z-[100] md:hidden">
+          <button aria-label="إغلاق القائمة" onClick={()=>setMobileMenuOpen(false)} className="mobile-menu-backdrop absolute inset-0 bg-[#3c3035]/45 backdrop-blur-[2px]"/>
+          <aside className="mobile-menu-drawer absolute inset-y-0 right-0 flex h-[100dvh] w-[82%] max-w-sm flex-col overflow-y-auto bg-[#fff9fb] p-5 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-2xl">
             <div className="mb-7 flex items-center justify-between border-b border-[#eadfd2] pb-4">
               <b className="text-xl">قائمة المتجر</b>
               <button aria-label="إغلاق" onClick={()=>setMobileMenuOpen(false)} className="grid size-10 place-items-center rounded-full border bg-white"><X/></button>
@@ -343,7 +347,6 @@ export default function Storefront() {
             </nav>
           </aside>
         </div>}
-      </header>
       <main id="home">
         <section className="mx-auto max-w-7xl px-4 py-12 text-center">
           <div className="mx-auto max-w-3xl">
@@ -400,35 +403,17 @@ export default function Storefront() {
         <section id="categories" className="mx-auto max-w-7xl px-4 py-8">
           <p className="font-bold text-[#b3797f]">كل ما يحتاجه صغيرك</p>
           <h2 className="mb-6 text-3xl font-black">تسوقي حسب القسم</h2>
-          <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-3 sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-5">
-            <button onClick={()=>go("all")} className="min-w-[72%] snap-center rounded-3xl border border-[#eadfd2] bg-gradient-to-br from-[#f8dce6] to-[#dff0f8] p-5 text-right shadow-sm transition-transform duration-300 hover:-translate-y-1 sm:min-w-0"><span className="mb-3 block text-2xl">🛍️</span><b>كل المنتجات</b><small className="mt-2 block text-gray-600">عرض جميع منتجات المتجر</small></button>
-            {categories.filter((c) => !c.parentId).length ? (
-              categories
-                .filter((c) => !c.parentId)
-                .map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => filterCategory(c.id)}
-                    className="min-w-[72%] snap-center rounded-3xl border border-[#eadfd2] bg-white p-5 text-right shadow-sm transition-transform duration-300 hover:-translate-y-1 sm:min-w-0"
-                  >
-                    <span className="mb-3 block text-2xl">
-                      {c.icon || "🧸"}
-                    </span>
-                    <b>{c.name}</b>
-                    <small className="mt-2 block text-gray-500">
-                      {categories
-                        .filter((x) => x.parentId === c.id)
-                        .slice(0, 3)
-                        .map((x) => x.name)
-                        .join(" • ")}
-                    </small>
-                  </button>
-                ))
-            ) : (
-              <p className="col-span-full rounded-2xl bg-white p-5">
-                أضف الأقسام من لوحة الإدارة.
-              </p>
-            )}
+          <div className="flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto scroll-smooth pb-3 sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-5">
+            <button onClick={()=>go("all")} className="min-w-[44%] snap-center rounded-3xl border border-[#eadfd2] bg-gradient-to-br from-[#f8dce6] to-[#dff0f8] p-4 text-center shadow-sm transition-transform duration-300 hover:-translate-y-1 sm:min-w-0"><span className="mb-2 block text-3xl">🛍️</span><b>كل المنتجات</b><small className="mt-2 block text-gray-600">عرض الجميع</small></button>
+            {categories.filter((c) => !c.parentId).length ? categories.filter((c) => !c.parentId).map((c) => {
+              const shape=c.displayShape||"rounded",mode=c.displayMode||"icon";
+              const shapeClass=shape==="circle"?"aspect-square min-w-[44%] rounded-full text-center":shape==="square"?"aspect-square min-w-[44%] rounded-3xl text-center":"min-w-[64%] rounded-3xl text-right";
+              return <button key={c.id} onClick={() => filterCategory(c.id)} className={`${shapeClass} snap-center overflow-hidden border border-[#eadfd2] bg-white p-4 shadow-sm transition-transform duration-300 hover:-translate-y-1 sm:min-w-0`}>
+                {mode==="image"&&c.imageUrl?<img src={c.imageUrl} alt={c.name} className={`mx-auto mb-3 object-cover ${shape==="circle"?"size-24 rounded-full":shape==="square"?"h-28 w-full rounded-2xl":"h-24 w-full rounded-2xl"}`}/>:mode==="icon"?<span className="mb-3 block text-3xl">{c.icon||"🧸"}</span>:null}
+                <b className="block">{c.name}</b>
+                {shape!=="circle"&&<small className="mt-2 block text-gray-500">{categories.filter((x) => x.parentId === c.id).slice(0, 3).map((x) => x.name).join(" • ")}</small>}
+              </button>
+            }) : <p className="col-span-full rounded-2xl bg-white p-5">أضف الأقسام من لوحة الإدارة.</p>}
           </div>
         </section>
         {!query && !category && mode === "all" && categories.filter((c) => !c.parentId).map((c) => {
@@ -676,19 +661,19 @@ export default function Storefront() {
         </div>
         <p className="mx-auto mt-8 max-w-7xl border-t border-white/15 pt-5 text-center text-sm text-white/75">{store.copyright||"© جميع الحقوق محفوظة للعبيدي لأناقة طفلك 2026."}</p>
       </footer>
-      <nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-[70] grid grid-cols-5 rounded-t-[2rem] border-t border-[#eadfd2] bg-[#f1e6dc]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 text-[#65585b] shadow-[0_-8px_30px_rgba(70,55,48,.12)] backdrop-blur md:hidden">
+      {!detail&&<nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-[70] grid grid-cols-5 rounded-t-[2rem] border-t border-[#eadfd2] bg-[#f1e6dc]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 text-[#65585b] shadow-[0_-8px_30px_rgba(70,55,48,.12)] backdrop-blur md:hidden">
         <button onClick={()=>go("all")} className={`grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black ${mode==="all"&&!category?"bg-white/60 text-[#7d9874]":""}`}><Baby size={23}/><span>الرئيسية</span></button>
         <button onClick={()=>document.getElementById("categories")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
         <button onClick={()=>go("all")} className="grid place-items-center gap-1 rounded-2xl bg-white/55 px-1 py-2 text-[11px] font-black text-[#7d9874]"><Search size={23}/><span>تسوق الآن</span></button>
         <a href="#cart" className="relative grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><ShoppingBag size={23}/><span>السلة</span>{cart.length>0&&<b className="absolute left-2 top-1 grid size-5 place-items-center rounded-full bg-[#cf858e] text-[10px] text-white">{cart.length}</b>}</a>
         <button onClick={()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><PackageSearch size={23}/><span>تتبع</span></button>
-      </nav>
-      <a
+      </nav>}
+      {!detail&&<a
         className="fixed bottom-24 left-4 z-[75] grid size-14 place-items-center rounded-full bg-[#25d366] text-white shadow-lg md:bottom-5"
         href={`https://wa.me/${store.whatsapp || "9647905068803"}`}
       >
         <MessageCircle />
-      </a>
+      </a>}
       {recentlyAdded!==null&&<div className="fixed bottom-24 right-1/2 z-[90] flex translate-x-1/2 animate-in items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 font-black text-white shadow-2xl fade-in slide-in-from-bottom-4 md:bottom-8"><CheckCircle2/> تمت إضافة المنتج إلى السلة</div>}
       <ProductDialog
         product={detail}
@@ -733,7 +718,7 @@ function ProductDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         dir="rtl"
-        className="max-h-[90vh] overflow-y-auto rounded-3xl sm:max-w-2xl"
+        className="max-h-[90dvh] overflow-y-auto rounded-3xl pb-32 sm:max-w-2xl sm:pb-6"
       >
         <DialogHeader>
           <DialogTitle className="text-right text-2xl">

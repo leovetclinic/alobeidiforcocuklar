@@ -207,3 +207,11 @@ html { scroll-behavior:smooth; }
   }
 }
 @media (prefers-reduced-motion:reduce) { .seasonal-particle { animation:none!important; } }
+
+/* Full-screen mobile navigation lives outside the sticky header to avoid clipping. */
+.mobile-menu-overlay { isolation:isolate; }
+.mobile-menu-backdrop { animation:mobile-menu-fade .28s ease-out both; }
+.mobile-menu-drawer { animation:mobile-menu-slide .38s cubic-bezier(.22,1,.36,1) both; }
+@keyframes mobile-menu-fade { from { opacity:0; } to { opacity:1; } }
+@keyframes mobile-menu-slide { from { opacity:.65; transform:translateX(105%); } to { opacity:1; transform:translateX(0); } }
+@media (prefers-reduced-motion:reduce) { .mobile-menu-backdrop,.mobile-menu-drawer { animation:none; } }

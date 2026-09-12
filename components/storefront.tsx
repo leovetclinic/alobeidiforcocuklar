@@ -672,9 +672,9 @@ export default function Storefront() {
         <p className="mx-auto mt-8 max-w-7xl border-t border-white/15 pt-5 text-center text-sm text-white/75">{store.copyright||"© جميع الحقوق محفوظة للعبيدي لأناقة طفلك 2026."}</p>
       </footer>
       {!detail&&<nav aria-label="التنقل السريع" className="fixed inset-x-0 bottom-0 z-[70] grid grid-cols-5 rounded-t-[2rem] border-t border-[#eadfd2] bg-[#f1e6dc]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 text-[#65585b] shadow-[0_-8px_30px_rgba(70,55,48,.12)] backdrop-blur md:hidden">
-        <button onClick={home} className={`grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black ${mode==="all"&&!category?"bg-white/60 text-[#7d9874]":""}`}><Baby size={23}/><span>الرئيسية</span></button>
-        <button onClick={()=>{setMenuCategoriesOpen(true);setMobileMenuOpen(true)}} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
-        <button onClick={()=>go("all")} className="grid place-items-center gap-1 rounded-2xl bg-white/55 px-1 py-2 text-[11px] font-black text-[#7d9874]"><Search size={23}/><span>تسوق الآن</span></button>
+        <button onClick={home} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Baby size={23}/><span>الرئيسية</span></button>
+        <button onClick={()=>document.getElementById("categories")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><Menu size={23}/><span>الأقسام</span></button>
+        <button onClick={()=>go("all")} className="grid place-items-center gap-1 rounded-2xl bg-white/55 px-1 py-2 text-[11px] font-black text-[#b56d86]"><Search size={23}/><span>تسوق الآن</span></button>
         <a href="#cart" className="relative grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><ShoppingBag size={23}/><span>السلة</span>{cart.length>0&&<b className="absolute left-2 top-1 grid size-5 place-items-center rounded-full bg-[#cf858e] text-[10px] text-white">{cart.length}</b>}</a>
         <button onClick={()=>document.getElementById("track-order")?.scrollIntoView({behavior:"smooth"})} className="grid place-items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-black"><PackageSearch size={23}/><span>تتبع</span></button>
       </nav>}

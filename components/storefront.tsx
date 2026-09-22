@@ -252,15 +252,23 @@ export default function Storefront() {
     setMode("all");
     scrollToSection("products");
   }
+  function resetProductFilters() {
+    setQuery("");
+    setFilterGender("");
+    setFilterColor("");
+    setFilterSize("");
+  }
   function go(m: "all" | "offers" | "new") {
     setMode(m);
     setCategory(null);
-    scrollToSection("products");
+    if (m === "all") resetProductFilters();
+    scrollToSection("products", 50);
   }
   function home() {
     setMode("all");
     setCategory(null);
-    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+    resetProductFilters();
+    window.setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" }), 50);
   }
   function useBottomItem(item: BottomNavItem) {
     setBottomActive(item.id);
@@ -297,7 +305,7 @@ export default function Storefront() {
             <span>{store.storeName || "العبيدي لأناقة طفلك"}</span>
           </a>
           <nav className="hidden gap-6 font-bold md:flex">
-            <button onClick={() => go("all")}>الرئيسية</button>
+            <button onClick={home}>الرئيسية</button>
             <button
               onClick={() =>
                 scrollToSection("categories", 0)

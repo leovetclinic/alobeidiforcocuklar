@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Archive,
   Baby,
   Bell,
   Boxes,
@@ -260,6 +261,7 @@ export default function Admin() {
       (o) => o.status === "pending" && !o.inventoryApplied,
     ),
     shipping = orders.filter((o) => o.status === "shipping"),
+    archived = orders.filter((o) => o.status === "delivered"),
     alerts = pending.length + shipping.length + lowItems.length;
   return (
     <div
@@ -327,6 +329,13 @@ export default function Admin() {
           >
             <ShoppingCart /> المبيعات{" "}
             {pending.length > 0 && <b>({pending.length})</b>}
+          </a>
+          <a
+            href="/admin/sales?view=archive"
+            className="flex gap-2 rounded-xl bg-white/10 p-3"
+          >
+            <Archive /> الأرشيف{" "}
+            {archived.length > 0 && <b>({archived.length})</b>}
           </a>
           <a
             href="/admin/categories"

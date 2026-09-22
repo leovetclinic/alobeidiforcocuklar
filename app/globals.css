@@ -137,14 +137,16 @@ body {
 }
 
 html { scroll-behavior:smooth; }
+/* Content must always remain visible. The previous observer-based opacity could
+   leave desktop visitors on a permanently blank page after changing filters. */
 .scroll-reveal {
-  opacity:0;
-  transform:translateY(22px);
-  transition:opacity .55s ease-out, transform .7s cubic-bezier(.22,1,.36,1);
-  transition-delay:var(--reveal-delay,0ms);
-  will-change:opacity,transform;
+  opacity:1;
+  transform:none;
+  transition:transform .45s cubic-bezier(.22,1,.36,1);
+  transition-delay:0ms;
+  will-change:auto;
 }
-.scroll-reveal.is-visible { opacity:1; transform:translateY(0); }
+.scroll-reveal.is-visible { opacity:1; transform:none; }
 .banner-grid { grid-template-columns:1fr; }
 .banner-motion { opacity:0; animation-duration:.72s; animation-fill-mode:forwards; animation-timing-function:cubic-bezier(.22,1,.36,1); }
 .banner-slide-up { animation-name:banner-slide-up; }

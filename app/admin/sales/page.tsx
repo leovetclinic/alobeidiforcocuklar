@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, CheckCircle2, Clock, RotateCcw, Trash2, Truck, X } from "lucide-react";
+import { Archive, ArrowRight, Check, CheckCircle2, Clock, RotateCcw, Trash2, Truck, X } from "lucide-react";
 type Item = {
   id: number;
   productId?: number;
@@ -37,7 +37,8 @@ const money = (n: number) => new Intl.NumberFormat("ar-IQ").format(n) + " د.ع"
 export default function Sales() {
   const [orders, setOrders] = useState<Order[]>([]),
     [notice, setNotice] = useState(""),
-    [working,setWorking]=useState("");
+    [working,setWorking]=useState(""),
+    [view,setView]=useState<"active"|"archive">("active");
   async function load() {
     const r = await fetch("/api/orders");
     if (r.status === 401) {
@@ -47,6 +48,7 @@ export default function Sales() {
     setOrders((await r.json()).orders || []);
   }
   useEffect(() => {
+    if (new URLSearchParams(location.search).get("view") === "archive") setView("archive");
     load();
     const t = setInterval(load, 30000);
     return () => clearInterval(t);
@@ -58,7 +60,17 @@ export default function Sales() {
     profit = sold.reduce(
       (s, i) => s + (i.unitPrice - i.unitCost) * i.quantity,
       0,
-    );
+    ),
+    activeOrders = orders.filter((o) => o.status !== "delivered"),
+    archivedOrders = orders.filter((o) => o.status === "delivered"),
+    displayedOrders = view === "archive" ? archivedOrders : activeOrders;
+  function changeView(next: "active" | "archive") {
+    setView(next);
+    const url = new URL(location.href);
+    if (next === "archive") url.searchParams.set("view", "archive");
+    else url.searchParams.delete("view");
+    history.replaceState(null, "", url.pathname + url.search);
+  }
   async function itemAction(o: Order, item: Item, action: string) {
     const key=`${action}-${item.id}`;setWorking(key);setNotice("");
     try { const r = await fetch(`/api/orders/${o.id}`, {
@@ -83,7 +95,7 @@ export default function Sales() {
   }
   async function delivered(o: Order) {
     const r=await fetch(`/api/orders/${o.id}`,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({action:"markDelivered"})}),x=await r.json();
-    setNotice(r.ok?"تم تسجيل وصول الطلب للزبون":x.error||"تعذر تحديث الطلب");if(r.ok)load();
+    setNotice(r.ok?"تم تسجيل وصول الطلب ونقله إلى الأرشيف":x.error||"تعذر تحديث الطلب");if(r.ok)load();
   }
   async function remove(id: number) {
     if (!confirm("حذف الطلب؟ المنتجات المؤكدة سترجع كمياتها للمخزن.")) return;
@@ -113,6 +125,14 @@ export default function Sales() {
             </span>
           )}
         </div>
+        <div className="mt-5 grid grid-cols-2 gap-3 rounded-3xl bg-white p-2 shadow-sm">
+          <button type="button" onClick={()=>changeView("active")} className={`rounded-2xl px-4 py-3 font-black transition ${view==="active"?"bg-[#55434c] text-white":"bg-[#fff9fb] text-[#55434c]"}`}>
+            الطلبات الحالية ({activeOrders.length})
+          </button>
+          <button type="button" onClick={()=>changeView("archive")} className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 font-black transition ${view==="archive"?"bg-[#55434c] text-white":"bg-[#fff9fb] text-[#55434c]"}`}>
+            <Archive className="size-5"/> الأرشيف ({archivedOrders.length})
+          </button>
+        </div>
         {notice && <p className="my-4 rounded-xl bg-[#dff0f8] p-3">{notice}</p>}
         <div className="my-6 grid gap-4 sm:grid-cols-4">
           <Card label="منتجات تنتظر" value={pending.length + ""} />
@@ -123,17 +143,23 @@ export default function Sales() {
           <Card label="إجمالي سعر المبيع" value={money(total)} />
           <Card label="صافي الأرباح" value={money(profit)} />
         </div>
-        <p className="mb-5 rounded-2xl bg-amber-50 p-4">
-          وافق أو ارفض كل منتج بصورة مستقلة. فقط المنتج الذي تضغط عليه «تم شراء
-          المنتج» ينقص من المخزن ويدخل ضمن المبيعات والأرباح.
-        </p>
+        {view === "active" ? (
+          <p className="mb-5 rounded-2xl bg-amber-50 p-4">
+            وافق أو ارفض كل منتج بصورة مستقلة. فقط المنتج الذي تضغط عليه «تم شراء
+            المنتج» ينقص من المخزن ويدخل ضمن المبيعات والأرباح.
+          </p>
+        ) : (
+          <p className="mb-5 rounded-2xl bg-emerald-50 p-4 text-emerald-800">
+            هنا تحفظ الطلبات التي تم توصيلها، مع جميع تفاصيل الزبون والمنتجات والمبالغ والأرباح.
+          </p>
+        )}
         <div className="space-y-4">
-          {orders.length === 0 ? (
+          {displayedOrders.length === 0 ? (
             <p className="rounded-3xl bg-white p-8 text-center">
-              لا توجد طلبات بعد.
+{view === "archive" ? "لا توجد طلبات مؤرشفة بعد." : "لا توجد طلبات حالية."}
             </p>
           ) : (
-            orders.map((o) => (
+            displayedOrders.map((o) => (
               <article
                 id={`order-${o.id}`}
                 key={o.id}
@@ -153,7 +179,7 @@ export default function Sales() {
                       {new Date(o.createdAt).toLocaleString("ar-IQ")}
                     </small>
                   </div>
-                  <button
+                  {view === "active" && <button
                     type="button"
                     disabled={!!working}
                     onClick={() => remove(o.id)}
@@ -161,7 +187,7 @@ export default function Sales() {
                   >
                     <Trash2 className={working===`delete-${o.id}`?"animate-pulse":""} />
                     {working===`delete-${o.id}`?"جاري الحذف…":"حذف الطلب"}
-                  </button>
+                  </button>}
                 </div>
                 <div className="my-5 grid grid-cols-3 gap-2 rounded-3xl bg-[#fff9fb] p-4 text-center">
                   <div className={o.status==="pending"?"text-[#b56d86]":"text-emerald-700"}><Clock className="mx-auto mb-1"/><b className="text-xs">في المخزن</b></div>
@@ -196,7 +222,7 @@ export default function Sales() {
                           </p>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        {view === "active" && <div className="flex flex-wrap gap-2">
                           {i.status === "pending" && (
                             <>
                               <button
@@ -247,7 +273,7 @@ export default function Sales() {
                               </button>
                             </>
                           )}
-                        </div>
+                        </div>}
                       </div>
                     </div>
                   ))}

@@ -5,8 +5,9 @@ export const metadata: Metadata = {
   title: "العبيدي لأناقة طفلك | ملابس ومستلزمات الأطفال",
   description: "متجر العبيدي لأناقة طفلك في بغداد – الكاظمية، لملابس ومستلزمات الأطفال وحديثي الولادة.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [{ url: "/favicon.jpg", type: "image/jpeg" }],
+    shortcut: "/favicon.jpg",
+    apple: "/favicon.jpg",
   },
 };
 

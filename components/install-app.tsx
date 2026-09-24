@@ -32,7 +32,7 @@ export function InstallApp() {
     const ios = /iphone|ipad|ipod/.test(ua);
     const android = /android/.test(ua);
     setIsIos(ios);
-    if (ios) setVisible(true);
+    if (ios || android) setVisible(true);
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
@@ -62,7 +62,10 @@ export function InstallApp() {
       setShowIosHelp(true);
       return;
     }
-    if (!promptEvent) return;
+    if (!promptEvent) {
+      setShowIosHelp(true);
+      return;
+    }
     await promptEvent.prompt();
     const choice = await promptEvent.userChoice;
     if (choice.outcome === "accepted") {
@@ -72,7 +75,7 @@ export function InstallApp() {
     setPromptEvent(null);
   }
 
-  function confirmIosInstalled() {
+  function confirmInstalled() {
     localStorage.setItem("alobeidi_app_installed", "1");
     setShowIosHelp(false);
     setVisible(false);
@@ -86,10 +89,9 @@ export function InstallApp() {
         type="button"
         onClick={install}
         aria-label="تثبيت تطبيق العبيدي لأناقة طفلك"
-        className="fixed bottom-28 right-4 z-[70] flex items-center gap-2 rounded-full bg-[#55434c] px-4 py-3 font-black text-white shadow-2xl transition active:scale-95 md:hidden"
+        className="fixed bottom-40 left-4 z-[75] grid size-14 place-items-center rounded-full border-2 border-white bg-[#55434c] text-white shadow-xl transition active:scale-90 md:hidden"
       >
-        <Download className="size-5" />
-        <span>تثبيت التطبيق</span>
+        <Download className="size-7" />
       </button>
 
       {showIosHelp && (
@@ -98,17 +100,25 @@ export function InstallApp() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img src="/favicon.jpg" alt="شعار العبيدي" className="size-14 rounded-2xl object-cover" />
-                <div><b className="block">تثبيت العبيدي لأناقة طفلك</b><small>على شاشة الآيفون الرئيسية</small></div>
+                <div><b className="block">تثبيت العبيدي لأناقة طفلك</b><small>{isIos ? "على شاشة الآيفون الرئيسية" : "على هاتف الأندرويد"}</small></div>
               </div>
               <button type="button" onClick={() => setShowIosHelp(false)} className="rounded-full bg-gray-100 p-2" aria-label="إغلاق"><X /></button>
             </div>
-            <ol className="mt-5 space-y-3 rounded-2xl bg-[#fff9fb] p-4 font-bold">
-              <li className="flex gap-2"><Share2 className="shrink-0 text-[#b56d86]" /> 1- اضغط زر المشاركة في Safari.</li>
-              <li>2- اختر «إضافة إلى الشاشة الرئيسية».</li>
-              <li>3- اضغط «إضافة».</li>
-            </ol>
+            {isIos ? (
+              <ol className="mt-5 space-y-3 rounded-2xl bg-[#fff9fb] p-4 font-bold">
+                <li className="flex gap-2"><Share2 className="shrink-0 text-[#b56d86]" /> 1- اضغط زر المشاركة في Safari.</li>
+                <li>2- اختر «إضافة إلى الشاشة الرئيسية».</li>
+                <li>3- اضغط «إضافة».</li>
+              </ol>
+            ) : (
+              <ol className="mt-5 space-y-3 rounded-2xl bg-[#fff9fb] p-4 font-bold">
+                <li>1- اضغط قائمة Chrome ذات النقاط الثلاث ⋮.</li>
+                <li>2- اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».</li>
+                <li>3- اضغط «تثبيت».</li>
+              </ol>
+            )}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <button type="button" onClick={confirmIosInstalled} className="rounded-2xl bg-[#55434c] px-4 py-3 font-black text-white">تمت الإضافة</button>
+              <button type="button" onClick={confirmInstalled} className="rounded-2xl bg-[#55434c] px-4 py-3 font-black text-white">تم التثبيت</button>
               <button type="button" onClick={() => setShowIosHelp(false)} className="rounded-2xl bg-gray-100 px-4 py-3 font-bold">لاحقاً</button>
             </div>
           </section>

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { InstallApp } from "@/components/install-app";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -29,7 +30,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <InstallApp />
+      </body>
     </html>
   );
 }

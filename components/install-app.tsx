@@ -22,6 +22,8 @@ export function InstallApp() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (window.location.pathname.startsWith("/admin")) return;
+
     localStorage.removeItem("alobeidi_app_installed");
     const installed = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
     if (installed) {
@@ -34,7 +36,7 @@ export function InstallApp() {
     const ios = /iphone|ipad|ipod/.test(ua);
     const android = /android/.test(ua);
     setIsIos(ios);
-    setVisible(ios || android);
+    setVisible(ios);
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
@@ -75,14 +77,10 @@ export function InstallApp() {
       const choice = await promptEvent.userChoice;
       if (choice.outcome === "accepted") {
         localStorage.setItem(INSTALLED_KEY, "1");
-        setVisible(false);
       }
+      setVisible(false);
       setPromptEvent(null);
-      return;
     }
-
-    const target = `${window.location.host}${window.location.pathname}${window.location.search}`;
-    window.location.href = `intent://${target}#Intent;scheme=https;package=com.android.chrome;end`;
   }
 
   if (!visible) return null;

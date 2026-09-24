@@ -30,8 +30,6 @@ export function InstallApp() {
       localStorage.setItem(INSTALLED_KEY, "1");
       return;
     }
-    if (localStorage.getItem(INSTALLED_KEY) === "1") return;
-
     const ua = navigator.userAgent.toLowerCase();
     const ios = /iphone|ipad|ipod/.test(ua);
     const android = /android/.test(ua);

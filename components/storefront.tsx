@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SeasonalEffects, type SeasonalEffect } from "@/components/seasonal-effects";
+import { InstallApp } from "@/components/install-app";
 type Image = { imageUrl: string };
 type Variant = {
   id: number;
@@ -287,6 +288,7 @@ export default function Storefront() {
       style={{"--site-bg":store.themeBackground||"#fff9fb","--site-text":store.themeText||"#55434c","--site-primary":store.themePrimary||"#d58fa7","--site-secondary":store.themeSecondary||"#b56d86","--site-soft":store.themeSoft||"#f8dce6","--site-accent":store.themeAccent||"#dff0f8","--site-border":store.themeBorder||"#eadfd2","--site-footer":store.themeFooter||"#55434c",background:store.themeBackground||"#fff9fb",color:store.themeText||"#55434c"} as React.CSSProperties}
     >
       <SeasonalEffects effects={effects} disabled={effectsDisabled} suppress={purchaseFocused}/>
+      <InstallApp />
       <header data-store-header className="sticky top-0 z-40 border-b border-[#f0dce4] bg-[#fff9fb]/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <button type="button" aria-label="فتح القائمة" aria-expanded={mobileMenuOpen} onClick={()=>setMobileMenuOpen(true)} className="grid size-11 place-items-center rounded-2xl border border-[#eadfd2] bg-white shadow-sm md:hidden"><Menu size={27}/></button>

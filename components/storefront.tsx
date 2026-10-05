@@ -779,6 +779,7 @@ function ProductDialog({
   ).map(([, group]) => group);
 
   const selectedGroup = colorGroups.find((group) => group.key === selectedColorKey);
+  const productHasSizes = !!product?.variants.some((variant) => !!(variant.size?.trim() || variant.age?.trim()));
   const selectedGroupHasSizes = !!selectedGroup?.variants.some((variant) => !!(variant.size?.trim() || variant.age?.trim()));
   const confirmedSelected = selectedGroupHasSizes
     ? (sizeChosen && selectedGroup?.variants.some((variant) => variant.id === selected?.id) ? selected : undefined)
@@ -815,7 +816,7 @@ function ProductDialog({
           <span>السعر: <b>{money(product.price)}</b></span>
           <span>كود المنتج: <b>{product.sku}</b></span>
           <span>الجنس: <b>{product.gender || "مشترك/غير محدد"}</b></span>
-          <span>العمر والقياس: <b>{selectedGroupHasSizes ? (confirmedSelected?.size || confirmedSelected?.age || "اختر القياس") : "غير مطلوب"}</b></span>
+          {productHasSizes && <span>العمر والقياس: <b>{confirmedSelected?.size || confirmedSelected?.age || "اختر القياس"}</b></span>}
           <span>اللون: <b>{selectedGroup?.colorName || "اختر اللون"}</b></span>
           <span><b>{confirmedSelected ? (confirmedSelected.stock > 0 ? "متوفر" : "نفذت الكمية") : "بانتظار الاختيار"}</b></span>
         </div>
@@ -842,7 +843,7 @@ function ProductDialog({
           </div>
         </div>
 
-        {(!selectedGroup || selectedGroupHasSizes) && <div className={selectedGroup ? "" : "opacity-60"}>
+        {productHasSizes && (!selectedGroup || selectedGroupHasSizes) && <div className={selectedGroup ? "" : "opacity-60"}>
           <b>2- اختر القياس:</b>
           {!selectedGroup && <p className="mt-2 text-sm">اختر اللون أولاً حتى تظهر قياساته المتوفرة.</p>}
           {selectedGroup && <div className="mt-3 flex flex-wrap gap-3">

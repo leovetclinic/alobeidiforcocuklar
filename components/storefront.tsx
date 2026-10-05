@@ -743,73 +743,115 @@ function ProductDialog({
   onSelect: (v: Variant) => void;
   onAdd: (p: Product, v: Variant) => void;
 }) {
-  const [imageIndex,setImageIndex]=useState(0),[imageTouch,setImageTouch]=useState<number|null>(null),[imageOpen,setImageOpen]=useState(false);
-  const images=selected?.images?.length?selected.images:(product?.variants.find(v=>v.images.length)?.images||[]);
-  useEffect(()=>setImageIndex(0),[product?.id,selected?.id,open]);
+  const [imageIndex, setImageIndex] = useState(0);
+  const [imageTouch, setImageTouch] = useState<number | null>(null);
+  const [imageOpen, setImageOpen] = useState(false);
+  const [selectedColorKey, setSelectedColorKey] = useState("");
+  const [sizeChosen, setSizeChosen] = useState(false);
+
+  useEffect(() => {
+    setImageIndex(0);
+    setSelectedColorKey("");
+    setSizeChosen(false);
+  }, [product?.id, open]);
+
+  const colorGroups = Array.from(
+    (product?.variants || []).reduce((groups, variant) => {
+      const key = `${variant.colorName || "بدون لون"}::${variant.colorHex || ""}`;
+      const current = groups.get(key);
+      if (current) current.variants.push(variant);
+      else groups.set(key, { key, colorName: variant.colorName || "بدون لون", colorHex: variant.colorHex, variants: [variant] });
+      return groups;
+    }, new Map<string, { key: string; colorName: string; colorHex: string | null; variants: Variant[] }>()),
+  ).map(([, group]) => group);
+
+  const selectedGroup = colorGroups.find((group) => group.key === selectedColorKey);
+  const confirmedSelected = sizeChosen && selectedGroup?.variants.some((variant) => variant.id === selected?.id) ? selected : undefined;
+  const images = selectedGroup?.variants.find((variant) => variant.images.length)?.images
+    || product?.variants.find((variant) => variant.images.length)?.images
+    || [];
+
+  useEffect(() => setImageIndex(0), [selectedColorKey, confirmedSelected?.id]);
   if (!product) return null;
-  const move=(direction:number)=>images.length>1&&setImageIndex(x=>(x+direction+images.length)%images.length);
+
+  const move = (direction: number) => images.length > 1 && setImageIndex((x) => (x + direction + images.length) % images.length);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        dir="rtl"
-        className="max-h-[90dvh] overflow-y-auto rounded-3xl pb-32 sm:max-w-2xl sm:pb-6"
-      >
+      <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto rounded-3xl pb-32 sm:max-w-2xl sm:pb-6">
         <DialogHeader>
-          <DialogTitle className="text-right text-2xl">
-            {product.name}
-          </DialogTitle>
-          <DialogDescription className="text-right">
-            {product.shortDescription || "تفاصيل المنتج"}
-          </DialogDescription>
+          <DialogTitle className="text-right text-2xl">{product.name}</DialogTitle>
+          <DialogDescription className="text-right">{product.shortDescription || "تفاصيل المنتج"}</DialogDescription>
         </DialogHeader>
-        <div className="relative overflow-hidden rounded-2xl touch-pan-y select-none" onTouchStart={e=>setImageTouch(e.touches[0].clientX)} onTouchEnd={e=>{if(imageTouch===null)return;const d=e.changedTouches[0].clientX-imageTouch;if(Math.abs(d)>40)move(d<0?1:-1);setImageTouch(null)}}>
-          <button type="button" onClick={()=>images[imageIndex]?.imageUrl&&setImageOpen(true)} className="block w-full cursor-zoom-in bg-[#fffaf8]" aria-label="تكبير صورة المنتج"><ProductImage key={`${selected?.id}-${imageIndex}`} src={images[imageIndex]?.imageUrl} name={product.name} className="aspect-square w-full animate-in object-contain p-3 fade-in duration-300" /></button>
-          {images.length>1&&<><button onClick={()=>move(-1)} className="absolute right-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 shadow" aria-label="الصورة السابقة"><ChevronLeft className="rotate-180"/></button><button onClick={()=>move(1)} className="absolute left-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 shadow" aria-label="الصورة التالية"><ChevronLeft/></button><div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">{images.map((_,i)=><button key={i} onClick={()=>setImageIndex(i)} className={`size-2.5 rounded-full ${i===imageIndex?"bg-[#d58fa7]":"bg-white"}`} aria-label={`الصورة ${i+1}`}/>)}</div></>}
+
+        <div className="relative overflow-hidden rounded-2xl touch-pan-y select-none" onTouchStart={(e) => setImageTouch(e.touches[0].clientX)} onTouchEnd={(e) => { if (imageTouch === null) return; const d = e.changedTouches[0].clientX - imageTouch; if (Math.abs(d) > 40) move(d < 0 ? 1 : -1); setImageTouch(null); }}>
+          <button type="button" onClick={() => images[imageIndex]?.imageUrl && setImageOpen(true)} className="block w-full cursor-zoom-in bg-[#fffaf8]" aria-label="تكبير صورة المنتج">
+            <ProductImage key={`${selectedColorKey}-${imageIndex}`} src={images[imageIndex]?.imageUrl} name={product.name} className="aspect-square w-full animate-in object-contain p-3 fade-in duration-300" />
+          </button>
+          {images.length > 1 && <>
+            <button type="button" onClick={() => move(-1)} className="absolute right-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 shadow" aria-label="الصورة السابقة"><ChevronLeft className="rotate-180" /></button>
+            <button type="button" onClick={() => move(1)} className="absolute left-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 shadow" aria-label="الصورة التالية"><ChevronLeft /></button>
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">{images.map((_, i) => <button type="button" key={i} onClick={() => setImageIndex(i)} className={`size-2.5 rounded-full ${i === imageIndex ? "bg-[#d58fa7]" : "bg-white"}`} aria-label={`الصورة ${i + 1}`} />)}</div>
+          </>}
         </div>
-        {images.length>1&&<div className="flex gap-2 overflow-x-auto pb-1">{images.map((img,i)=><button key={i} onClick={()=>setImageIndex(i)} className={`shrink-0 overflow-hidden rounded-xl border-2 ${i===imageIndex?"border-[#d58fa7]":"border-transparent"}`}><img src={img.imageUrl} alt={`${product.name} ${i+1}`} className="size-16 bg-white object-contain"/></button>)}</div>}
-        {imageOpen&&<div className="fixed inset-0 z-[120] grid cursor-zoom-out place-items-center bg-black/85 p-3" onClick={()=>setImageOpen(false)}><img src={images[imageIndex]?.imageUrl} alt={product.name} className="max-h-[94vh] max-w-[96vw] object-contain"/><button type="button" className="absolute left-4 top-4 grid size-11 place-items-center rounded-full bg-white text-black" aria-label="إغلاق الصورة"><X/></button></div>}
+        {images.length > 1 && <div className="flex gap-2 overflow-x-auto pb-1">{images.map((img, i) => <button type="button" key={i} onClick={() => setImageIndex(i)} className={`shrink-0 overflow-hidden rounded-xl border-2 ${i === imageIndex ? "border-[#d58fa7]" : "border-transparent"}`}><img src={img.imageUrl} alt={`${product.name} ${i + 1}`} className="size-16 bg-white object-contain" /></button>)}</div>}
+        {imageOpen && <div className="fixed inset-0 z-[120] grid cursor-zoom-out place-items-center bg-black/85 p-3" onClick={() => setImageOpen(false)}><img src={images[imageIndex]?.imageUrl} alt={product.name} className="max-h-[94vh] max-w-[96vw] object-contain" /><button type="button" className="absolute left-4 top-4 grid size-11 place-items-center rounded-full bg-white text-black" aria-label="إغلاق الصورة"><X /></button></div>}
+
         <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#fff4f7] p-4">
-          <span>
-            السعر: <b>{money(product.price)}</b>
-          </span>
-          <span>
-            كود المنتج: <b>{product.sku}</b>
-          </span>
-          <span>
-            الجنس: <b>{product.gender || "مشترك/غير محدد"}</b>
-          </span>
-          <span>العمر والقياس: <b>{selected?.size || selected?.age || "غير محدد"}</b></span>
-          <span>
-            اللون: <b>{selected?.colorName || "غير محدد"}</b>
-          </span>
-          <span><b>{selected?.stock ? "متوفر" : "نفذت الكمية"}</b></span>
+          <span>السعر: <b>{money(product.price)}</b></span>
+          <span>كود المنتج: <b>{product.sku}</b></span>
+          <span>الجنس: <b>{product.gender || "مشترك/غير محدد"}</b></span>
+          <span>العمر والقياس: <b>{confirmedSelected?.size || confirmedSelected?.age || "اختاري القياس"}</b></span>
+          <span>اللون: <b>{selectedGroup?.colorName || "اختاري اللون"}</b></span>
+          <span><b>{confirmedSelected ? (confirmedSelected.stock > 0 ? "متوفر" : "نفذت الكمية") : "بانتظار الاختيار"}</b></span>
         </div>
         <p>{product.description}</p>
+
         <div>
-          <b>اختاري اللون والعمر/القياس:</b>
+          <b>1- اختاري اللون:</b>
           <div className="mt-3 flex flex-wrap gap-3">
-            {product.variants.map((v) => (
-              <button
-                key={v.id}
-                disabled={v.stock < 1}
-                onClick={() => onSelect(v)}
-                className={`flex items-center gap-2 rounded-full border px-3 py-2 ${selected?.id === v.id ? "ring-2 ring-[#d58fa7]" : ""} ${v.stock < 1 ? "opacity-40" : ""}`}
-              >
-                <span
-                  className="size-6 rounded-full border"
-                  style={{ background: v.colorHex || "#eee" }}
-                />
-                {[v.colorName,v.size||v.age].filter(Boolean).join(" • ") || "اختيار المنتج"}
-              </button>
-            ))}
+            {colorGroups.map((group) => {
+              const available = group.variants.some((variant) => variant.stock > 0);
+              return (
+                <button
+                  type="button"
+                  key={group.key}
+                  disabled={!available}
+                  onClick={() => { setSelectedColorKey(group.key); setSizeChosen(false); }}
+                  className={`flex items-center gap-2 rounded-full border px-4 py-2 ${selectedColorKey === group.key ? "ring-2 ring-[#d58fa7] bg-[#fff1f6]" : ""} ${!available ? "opacity-40" : ""}`}
+                >
+                  <span className="size-6 rounded-full border" style={{ background: group.colorHex || "#eee" }} />
+                  {group.colorName}
+                </button>
+              );
+            })}
           </div>
         </div>
+
+        <div className={selectedGroup ? "" : "opacity-60"}>
+          <b>2- اختاري القياس:</b>
+          {!selectedGroup && <p className="mt-2 text-sm">اختاري اللون أولاً حتى تظهر قياساته المتوفرة.</p>}
+          {selectedGroup && <div className="mt-3 flex flex-wrap gap-3">
+            {selectedGroup.variants.map((variant) => (
+              <button
+                type="button"
+                key={variant.id}
+                disabled={variant.stock < 1}
+                onClick={() => { onSelect(variant); setSizeChosen(true); }}
+                className={`rounded-full border px-4 py-2 font-bold ${confirmedSelected?.id === variant.id ? "ring-2 ring-[#d58fa7] bg-[#fff1f6]" : ""} ${variant.stock < 1 ? "opacity-40 line-through" : ""}`}
+              >
+                {variant.size || variant.age || "بدون قياس"}
+              </button>
+            ))}
+          </div>}
+        </div>
+
         <button
-          disabled={!selected || selected.stock < 1}
-          onClick={() => selected && onAdd(product, selected)}
-          className="rounded-full bg-[#d58fa7] py-3 font-bold text-white"
+          type="button"
+          disabled={!selectedGroup || !confirmedSelected || confirmedSelected.stock < 1}
+          onClick={() => confirmedSelected && onAdd(product, confirmedSelected)}
+          className="rounded-full bg-[#d58fa7] py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          أضف للسلة
+          {!selectedGroup ? "اختاري اللون أولاً" : !confirmedSelected ? "اختاري القياس أولاً" : "أضف للسلة"}
         </button>
       </DialogContent>
     </Dialog>

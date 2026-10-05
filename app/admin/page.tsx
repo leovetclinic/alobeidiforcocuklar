@@ -36,6 +36,7 @@ type V = {
   stock: number;
   images: Img[];
   sizeStocks?: Record<string, number>;
+  hasSizes?: boolean;
 };
 type P = {
   id: number;
@@ -61,6 +62,7 @@ const blank = (): V => ({
   stock: 0,
   images: [],
   sizeStocks: {},
+  hasSizes: false,
 });
 const sizeOptions = ["0-3 شهر","3-6 شهر","6-9 شهر","9-12 شهر","12-18 شهر","18-24 شهر","24-36 شهر"];
 const themeDefaults={themeBackground:"#fff9fb",themeText:"#55434c",themePrimary:"#d58fa7",themeSecondary:"#b56d86",themeSoft:"#f8dce6",themeAccent:"#dff0f8",themeBorder:"#eadfd2",themeFooter:"#55434c"};
@@ -141,9 +143,9 @@ export default function Admin() {
     setSaving(true);
     const expandedVariants = variants.flatMap((v) => {
       const sizes = Object.entries(v.sizeStocks || {}).filter(([, stock]) => Number(stock) >= 0);
-      return sizes.length
-        ? sizes.map(([size, stock]) => ({ ...v, size, age: "", stock: Number(stock), sizeStocks: undefined }))
-        : [{ ...v, size: v.size || "", stock: Number(v.stock || 0), sizeStocks: undefined }];
+      return v.hasSizes && sizes.length
+        ? sizes.map(([size, stock]) => ({ ...v, size, age: "", stock: Number(stock), sizeStocks: undefined, hasSizes: undefined }))
+        : [{ ...v, size: "", age: "", stock: Number(v.stock || 0), sizeStocks: undefined, hasSizes: undefined }];
     });
     const d = new FormData(e.currentTarget),
       r = await fetch("/api/products", {
@@ -550,38 +552,62 @@ function ProductForm({
                 </button>
               </div>
               <div className="mt-4 rounded-2xl bg-[#fff9fb] p-4">
-                <b>حددي القياسات المتوفرة لهذا اللون والكمية لكل قياس:</b>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {sizeOptions.map((size) => {
-                    const checked = Object.prototype.hasOwnProperty.call(v.sizeStocks || {}, size);
-                    return (
-                      <label key={size} className={`flex items-center gap-2 rounded-xl border p-3 ${checked ? "border-[#d58fa7] bg-[#fff1f6]" : "bg-white"}`}>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => setVariants((a: V[]) => a.map((x, n) => {
-                            if (n !== i) return x;
-                            const next = { ...(x.sizeStocks || {}) };
-                            if (e.target.checked) next[size] = 0;
-                            else delete next[size];
-                            return { ...x, sizeStocks: next };
-                          }))}
-                        />
-                        <span className="flex-1 font-bold">{size}</span>
-                        {checked && (
-                          <input
-                            type="number"
-                            min="0"
-                            value={(v.sizeStocks || {})[size] ?? 0}
-                            onChange={(e) => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, sizeStocks: { ...(x.sizeStocks || {}), [size]: +e.target.value } } : x))}
-                            className="input !mt-0 w-20"
-                            aria-label={`كمية ${size}`}
-                          />
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
+                <label className="flex items-center gap-3 font-bold">
+                  <input
+                    type="checkbox"
+                    checked={!!v.hasSizes}
+                    onChange={(e) => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, hasSizes: e.target.checked, sizeStocks: e.target.checked ? (x.sizeStocks || {}) : {} } : x))}
+                  />
+                  هذا اللون يحتوي قياسات
+                </label>
+                {v.hasSizes ? (
+                  <>
+                    <b className="mt-4 block">حددي القياسات المتوفرة لهذا اللون والكمية لكل قياس:</b>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {sizeOptions.map((size) => {
+                        const checked = Object.prototype.hasOwnProperty.call(v.sizeStocks || {}, size);
+                        return (
+                          <label key={size} className={`flex items-center gap-2 rounded-xl border p-3 ${checked ? "border-[#d58fa7] bg-[#fff1f6]" : "bg-white"}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => setVariants((a: V[]) => a.map((x, n) => {
+                                if (n !== i) return x;
+                                const next = { ...(x.sizeStocks || {}) };
+                                if (e.target.checked) next[size] = 0;
+                                else delete next[size];
+                                return { ...x, sizeStocks: next };
+                              }))}
+                            />
+                            <span className="flex-1 font-bold">{size}</span>
+                            {checked && (
+                              <input
+                                type="number"
+                                min="0"
+                                value={(v.sizeStocks || {})[size] ?? 0}
+                                onChange={(e) => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, sizeStocks: { ...(x.sizeStocks || {}), [size]: +e.target.value } } : x))}
+                                className="input !mt-0 w-20"
+                                aria-label={`كمية ${size}`}
+                              />
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <label className="mt-4 block font-bold">
+                    العدد المتوفر
+                    <input
+                      type="number"
+                      min="0"
+                      value={v.stock || 0}
+                      onChange={(e) => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, stock: +e.target.value } : x))}
+                      className="input"
+                      aria-label="العدد المتوفر لهذا اللون"
+                    />
+                  </label>
+                )}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {v.images.map((img, j) => (

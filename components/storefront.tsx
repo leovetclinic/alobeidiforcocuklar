@@ -454,19 +454,6 @@ export default function Storefront() {
             }) : <p className="col-span-full rounded-2xl bg-white p-5">أضف الأقسام من لوحة الإدارة.</p>}
           </div>
         </section>
-        {!query && !category && mode === "all" && categories.filter((c) => !c.parentId).map((c) => {
-          const ids = [c.id, ...categories.filter((x) => x.parentId === c.id).map((x) => x.id)];
-          const sectionProducts = products.filter((p) => ids.includes(p.categoryId || 0)).slice(0, 4);
-          if (!sectionProducts.length) return null;
-          return <section key={c.id} className="mx-auto max-w-7xl px-4 py-8">
-            <div className="mb-4 flex items-end justify-between gap-3">
-              <div><p className="text-sm font-bold text-[#b3797f]">{c.icon} تسوقي حسب القسم</p><h2 className="text-3xl font-black">{c.name}</h2></div>
-              <button onClick={()=>filterCategory(c.id)} className="inline-flex items-center gap-1 font-bold text-[#b56d86]">عرض الكل <ChevronLeft size={18}/></button>
-            </div>
-            <div className="mb-4 flex flex-wrap gap-2">{categories.filter((x)=>x.parentId===c.id).map((x)=><button key={x.id} onClick={()=>filterCategory(x.id)} className="rounded-full border bg-white px-4 py-2 text-sm font-bold">{x.name}</button>)}</div>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{sectionProducts.map((p)=>{const v=choose(p),out=p.variants.every(x=>x.stock<1);return <button key={p.id} onClick={()=>setDetail(p)} className="overflow-hidden rounded-[1.7rem] border bg-white text-right shadow-sm transition hover:-translate-y-1"><span className="relative block overflow-hidden"><ProductImage src={v?.images[0]?.imageUrl} name={p.name} className={`aspect-square w-full bg-[#fffaf8] object-contain p-2 ${out?"grayscale opacity-55":""}`}/>{out&&<span className="absolute inset-0 grid place-items-center bg-slate-600/35"><i className="absolute h-1 w-[140%] -rotate-45 rounded-full bg-slate-700/80"/><b className="relative z-10 rounded-full bg-slate-800/90 px-4 py-2 text-sm text-white shadow-lg">نفذت الكمية</b></span>}</span><span className="block p-4"><b className="block">{p.name}</b><small className="text-[#b56d86]">كود {p.sku}</small><strong className="mt-1 block">{money(p.price)}</strong></span></button>})}</div>
-          </section>;
-        })}
         <section id="products" className="mx-auto max-w-7xl px-4 py-10">
           <p className="font-bold text-[#b3797f]">
             {mode === "offers"
@@ -584,6 +571,19 @@ export default function Storefront() {
             </div>
           )}
         </section>
+        {!query && !category && mode === "all" && categories.filter((c) => !c.parentId).map((c) => {
+          const ids = [c.id, ...categories.filter((x) => x.parentId === c.id).map((x) => x.id)];
+          const sectionProducts = products.filter((p) => ids.includes(p.categoryId || 0)).slice(0, 4);
+          if (!sectionProducts.length) return null;
+          return <section key={c.id} className="mx-auto max-w-7xl px-4 py-8">
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <div><p className="text-sm font-bold text-[#b3797f]">{c.icon} تسوقي حسب القسم</p><h2 className="text-3xl font-black">{c.name}</h2></div>
+              <button onClick={()=>filterCategory(c.id)} className="inline-flex items-center gap-1 font-bold text-[#b56d86]">عرض الكل <ChevronLeft size={18}/></button>
+            </div>
+            <div className="mb-4 flex flex-wrap gap-2">{categories.filter((x)=>x.parentId===c.id).map((x)=><button key={x.id} onClick={()=>filterCategory(x.id)} className="rounded-full border bg-white px-4 py-2 text-sm font-bold">{x.name}</button>)}</div>
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{sectionProducts.map((p)=>{const v=choose(p),out=p.variants.every(x=>x.stock<1);return <button key={p.id} onClick={()=>setDetail(p)} className="overflow-hidden rounded-[1.7rem] border bg-white text-right shadow-sm transition hover:-translate-y-1"><span className="relative block overflow-hidden"><ProductImage src={v?.images[0]?.imageUrl} name={p.name} className={`aspect-square w-full bg-[#fffaf8] object-contain p-2 ${out?"grayscale opacity-55":""}`}/>{out&&<span className="absolute inset-0 grid place-items-center bg-slate-600/35"><i className="absolute h-1 w-[140%] -rotate-45 rounded-full bg-slate-700/80"/><b className="relative z-10 rounded-full bg-slate-800/90 px-4 py-2 text-sm text-white shadow-lg">نفذت الكمية</b></span>}</span><span className="block p-4"><b className="block">{p.name}</b><small className="text-[#b56d86]">كود {p.sku}</small><strong className="mt-1 block">{money(p.price)}</strong></span></button>})}</div>
+          </section>;
+        })}
         <section
           id="cart"
           className="mx-auto my-10 grid max-w-7xl gap-6 px-4 lg:grid-cols-[1fr_360px]"

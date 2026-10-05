@@ -68,12 +68,12 @@ export default function EditProduct({
   }, [params]);
   const change = (k: string, v: any) => setP({ ...p, [k]: v });
   const editV = (i: number, k: string, v: any) =>
-    setP({
-      ...p,
-      variants: p.variants.map((x: Variant, n: number) =>
+    setP((current: any) => ({
+      ...current,
+      variants: current.variants.map((x: Variant, n: number) =>
         n === i ? { ...x, [k]: v } : x,
       ),
-    });
+    }));
   async function upload(i: number, files: FileList | null) {
     if (!files) return;
     for (const original of Array.from(files)) {

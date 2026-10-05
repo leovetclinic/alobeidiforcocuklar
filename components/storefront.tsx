@@ -500,6 +500,16 @@ export default function Storefront() {
               {shown.map((p) => {
                 const v = choose(p);
                 const soldOut = p.variants.every((x) => x.stock < 1);
+                const colorChoices = Array.from(
+                  p.variants.reduce((groups, variant) => {
+                    const key = `${variant.colorName || "بدون لون"}::${variant.colorHex || ""}`;
+                    const current = groups.get(key);
+                    if (!current || (current.stock < 1 && variant.stock > 0) || (!current.images.length && variant.images.length)) {
+                      groups.set(key, variant);
+                    }
+                    return groups;
+                  }, new Map<string, Variant>()),
+                ).map(([, variant]) => variant);
                 return (
                   <article
                     key={p.id}
@@ -543,19 +553,22 @@ export default function Storefront() {
                           </del>
                         )}
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {p.variants.map((x) => (
-                          <button
-                            key={x.id}
-                            disabled={x.stock < 1}
-                            onClick={() =>
-                              setSelected((s) => ({ ...s, [p.id]: x.id }))
-                            }
-                            className={`relative size-7 rounded-full border ${v?.id === x.id ? "ring-2 ring-[#b56d86] ring-offset-2" : ""} ${x.stock < 1 ? "opacity-30 after:absolute after:inset-x-0 after:top-1/2 after:h-px after:-rotate-45 after:bg-black" : ""}`}
-                            style={{ background: x.colorHex || "#eee" }}
-                            title={`${x.colorName}${x.stock < 1 ? " - نفذت" : ""}`}
-                          />
-                        ))}
+                      <div className="mt-3 flex min-h-8 flex-wrap items-center gap-2" aria-label="ألوان المنتج">
+                        {colorChoices.map((x) => {
+                          const active = v?.colorName === x.colorName && v?.colorHex === x.colorHex;
+                          return (
+                            <button
+                              type="button"
+                              key={`${x.colorName}-${x.colorHex}`}
+                              disabled={x.stock < 1}
+                              onClick={() => setSelected((state) => ({ ...state, [p.id]: x.id }))}
+                              className={`relative size-8 shrink-0 rounded-full border-2 border-[#8d7b82] shadow-sm transition-transform hover:scale-110 ${active ? "ring-2 ring-[#b56d86] ring-offset-2" : ""} ${x.stock < 1 ? "opacity-30 after:absolute after:inset-x-0 after:top-1/2 after:h-px after:-rotate-45 after:bg-black" : ""}`}
+                              style={{ background: x.colorHex || "#eee" }}
+                              title={`${x.colorName || "بدون لون"}${x.stock < 1 ? " - نفذت" : ""}`}
+                              aria-label={`عرض لون ${x.colorName || "بدون لون"}`}
+                            />
+                          );
+                        })}
                       </div>
                       <button
                         disabled={!v || v.stock < 1}

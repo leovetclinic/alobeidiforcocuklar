@@ -779,7 +779,10 @@ function ProductDialog({
   ).map(([, group]) => group);
 
   const selectedGroup = colorGroups.find((group) => group.key === selectedColorKey);
-  const confirmedSelected = sizeChosen && selectedGroup?.variants.some((variant) => variant.id === selected?.id) ? selected : undefined;
+  const selectedGroupHasSizes = !!selectedGroup?.variants.some((variant) => !!(variant.size?.trim() || variant.age?.trim()));
+  const confirmedSelected = selectedGroupHasSizes
+    ? (sizeChosen && selectedGroup?.variants.some((variant) => variant.id === selected?.id) ? selected : undefined)
+    : selectedGroup?.variants.find((variant) => variant.stock > 0);
   const imagePool = (selectedGroup?.variants || product?.variants || []).flatMap((variant) => variant.images || []);
   const images = Array.from(new Map(imagePool.map((image) => [image.imageUrl, image])).values());
 
@@ -812,7 +815,7 @@ function ProductDialog({
           <span>السعر: <b>{money(product.price)}</b></span>
           <span>كود المنتج: <b>{product.sku}</b></span>
           <span>الجنس: <b>{product.gender || "مشترك/غير محدد"}</b></span>
-          <span>العمر والقياس: <b>{confirmedSelected?.size || confirmedSelected?.age || "اختر القياس"}</b></span>
+          <span>العمر والقياس: <b>{selectedGroupHasSizes ? (confirmedSelected?.size || confirmedSelected?.age || "اختر القياس") : "غير مطلوب"}</b></span>
           <span>اللون: <b>{selectedGroup?.colorName || "اختر اللون"}</b></span>
           <span><b>{confirmedSelected ? (confirmedSelected.stock > 0 ? "متوفر" : "نفذت الكمية") : "بانتظار الاختيار"}</b></span>
         </div>
@@ -839,11 +842,11 @@ function ProductDialog({
           </div>
         </div>
 
-        <div className={selectedGroup ? "" : "opacity-60"}>
+        {(!selectedGroup || selectedGroupHasSizes) && <div className={selectedGroup ? "" : "opacity-60"}>
           <b>2- اختر القياس:</b>
           {!selectedGroup && <p className="mt-2 text-sm">اختر اللون أولاً حتى تظهر قياساته المتوفرة.</p>}
           {selectedGroup && <div className="mt-3 flex flex-wrap gap-3">
-            {selectedGroup.variants.map((variant) => (
+            {selectedGroup.variants.filter((variant) => variant.size?.trim() || variant.age?.trim()).map((variant) => (
               <button
                 type="button"
                 key={variant.id}
@@ -851,11 +854,11 @@ function ProductDialog({
                 onClick={() => { onSelect(variant); setSizeChosen(true); }}
                 className={`rounded-full border px-4 py-2 font-bold ${confirmedSelected?.id === variant.id ? "ring-2 ring-[#d58fa7] bg-[#fff1f6]" : ""} ${variant.stock < 1 ? "opacity-40 line-through" : ""}`}
               >
-                {variant.size || variant.age || "بدون قياس"}
+                {variant.size || variant.age}
               </button>
             ))}
           </div>}
-        </div>
+        </div>}
 
         <button
           type="button"
@@ -863,7 +866,7 @@ function ProductDialog({
           onClick={() => confirmedSelected && onAdd(product, confirmedSelected)}
           className="rounded-full bg-[#d58fa7] py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {!selectedGroup ? "اختر اللون أولاً" : !confirmedSelected ? "اختر القياس أولاً" : "أضف للسلة"}
+          {!selectedGroup ? "اختر اللون أولاً" : selectedGroupHasSizes && !confirmedSelected ? "اختر القياس أولاً" : "أضف للسلة"}
         </button>
       </DialogContent>
     </Dialog>

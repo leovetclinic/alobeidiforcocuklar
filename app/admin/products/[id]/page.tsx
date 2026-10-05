@@ -12,9 +12,32 @@ type Variant = {
   stock: number;
   active: boolean;
   images: Image[];
+  sizeStocks?: Record<string, number>;
 };
 type Cat = { id: number; name: string; parentId?: number };
 const sizeOptions = ["0-3 شهر","3-6 شهر","6-9 شهر","9-12 شهر","12-18 شهر","18-24 شهر","24-36 شهر"];
+function groupVariantsByColor(items: Variant[]) {
+  const groups = new Map<string, Variant>();
+  for (const item of items || []) {
+    const key = `${item.colorName || ""}::${item.colorHex || ""}`;
+    const size = item.size || item.age || "";
+    const current = groups.get(key);
+    if (!current) {
+      groups.set(key, {
+        ...item,
+        size: "",
+        age: "",
+        stock: 0,
+        images: item.images || [],
+        sizeStocks: size ? { [size]: Number(item.stock || 0) } : {},
+      });
+    } else {
+      if (size) current.sizeStocks = { ...(current.sizeStocks || {}), [size]: Number(item.stock || 0) };
+      if ((!current.images || !current.images.length) && item.images?.length) current.images = item.images;
+    }
+  }
+  return Array.from(groups.values());
+}
 export default function EditProduct({
   params,
 }: {
@@ -32,7 +55,8 @@ export default function EditProduct({
         fetch(`/api/products/${x.id}?admin=1`).then((r) => r.json()),
         fetch("/api/categories?admin=1").then((r) => r.json()),
       ]).then(([a, c]) => {
-        setP(a.product || a);
+        const product = a.product || a;
+        setP({ ...product, variants: groupVariantsByColor(product.variants || []) });
         setCats(c.categories || []);
       });
     });
@@ -65,13 +89,19 @@ export default function EditProduct({
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    const expandedVariants = p.variants.flatMap((v: Variant) => {
+      const sizes = Object.entries(v.sizeStocks || {}).filter(([, stock]) => Number(stock) >= 0);
+      return sizes.length
+        ? sizes.map(([size, stock]) => ({ ...v, id: undefined, size, age: "", stock: Number(stock), sizeStocks: undefined }))
+        : [{ ...v, id: undefined, size: v.size || "", stock: Number(v.stock || 0), sizeStocks: undefined }];
+    });
     const body = {
       ...p,
       categoryId: +p.categoryId,
       price: +p.price,
       cost: +(p.cost || 0),
       oldPrice: p.oldPrice ? +p.oldPrice : null,
-      variants: p.variants.map((v: Variant) => ({
+      variants: expandedVariants.map((v: Variant) => ({
         ...v,
         stock: +v.stock,
         images: v.images.map((x: Image) => ({ url: x.url || x.imageUrl })),
@@ -94,7 +124,7 @@ export default function EditProduct({
   return (
     <main dir="rtl" className="min-h-screen bg-[#fff9fb] p-4 md:p-8">
       <form onSubmit={save} className="mx-auto max-w-6xl">
-        <a href="/admin" className="inline-flex gap-2">
+        <a href={`/admin?tab=products&product=${new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").get("returnProduct") || id}`} className="inline-flex gap-2">
           <ArrowRight /> رجوع للمنتجات
         </a>
         <div className="mt-5 flex justify-between">
@@ -220,69 +250,57 @@ export default function EditProduct({
           </div>
           {p.variants.map((v: Variant, i: number) => (
             <div key={i} className="mt-4 rounded-2xl border p-4">
-              <div className="grid items-end gap-3 md:grid-cols-6">
-                <input
-                  className="input"
-                  placeholder="اللون"
-                  value={v.colorName || ""}
-                  onChange={(e) => editV(i, "colorName", e.target.value)}
-                />
-                <input
-                  type="color"
-                  value={v.colorHex || "#eeeeee"}
-                  onChange={(e) => editV(i, "colorHex", e.target.value)}
-                />
-                <label className="text-sm font-bold">العمر والقياس<input list="size-options-edit" className="input" value={v.size||v.age||""} onChange={(e)=>setP({...p,variants:p.variants.map((x:Variant,n:number)=>n===i?{...x,size:e.target.value,age:""}:x)})} placeholder="اختر أو اكتب قياساً جديداً" /><datalist id="size-options-edit">{sizeOptions.map(s=><option key={s} value={s}/>)}</datalist></label>
+              <div className="grid items-end gap-3 md:grid-cols-[1fr_90px_1fr_auto_auto]">
                 <label className="text-sm font-bold">
-                  الكمية في المخزن
-                  <input className="input" type="number" min="0" value={v.stock} onChange={(e) => editV(i, "stock", +e.target.value)} />
+                  اللون
+                  <input className="input" placeholder="مثلاً: سمائي" value={v.colorName || ""} onChange={(e) => editV(i, "colorName", e.target.value)} />
                 </label>
+                <input type="color" value={v.colorHex || "#eeeeee"} onChange={(e) => editV(i, "colorHex", e.target.value)} className="h-12 w-full rounded-xl" aria-label="لون المنتج" />
                 <label className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed p-2 text-xs font-bold">
                   {v.images[0] ? <img src={v.images[0].url || v.images[0].imageUrl} className="size-16 rounded-lg object-cover" /> : <span className="grid size-16 place-items-center rounded-lg bg-stone-50"><ImagePlus /></span>}
-                  الصورة
+                  صور هذا اللون (ترفع مرة واحدة)
                   <input hidden type="file" multiple accept="image/*" onChange={(e) => upload(i, e.target.files)} />
                 </label>
                 <button
                   type="button"
-                  className="text-red-600"
-                  onClick={() =>
-                    change(
-                      "variants",
-                      p.variants.filter((_: Variant, n: number) => n !== i),
-                    )
-                  }
+                  className="btn-soft"
+                  onClick={() => change("variants", [...p.variants, { colorName: "", colorHex: "#f3b6c2", size: "", age: "", stock: 0, active: true, images: [], sizeStocks: {} }])}
                 >
+                  <Plus /> لون آخر
+                </button>
+                <button type="button" className="text-red-600" onClick={() => change("variants", p.variants.filter((_: Variant, n: number) => n !== i))} aria-label="حذف اللون">
                   <Trash2 />
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => change("variants", [...p.variants, { ...v, id: undefined, size: "", age: "", stock: 0, images: [...v.images] }])}
-                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#eef7f3] px-4 py-2 font-bold text-[#527465]"
-              >
-                <Plus className="size-4" /> إضافة قياس آخر لنفس المنتج
-              </button>
-              <p className="mt-2 text-xs text-stone-500">القياس الجديد يأخذ الصورة نفسها تلقائياً، ويمكن الضغط على الصورة لتغييرها أو إضافة صور.</p>
+              <div className="mt-4 rounded-2xl bg-[#fff9fb] p-4">
+                <b>حددي القياسات المتوفرة لهذا اللون والكمية لكل قياس:</b>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {sizeOptions.map((size) => {
+                    const checked = Object.prototype.hasOwnProperty.call(v.sizeStocks || {}, size);
+                    return (
+                      <label key={size} className={`flex items-center gap-2 rounded-xl border p-3 ${checked ? "border-[#d58fa7] bg-[#fff1f6]" : "bg-white"}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = { ...(v.sizeStocks || {}) };
+                            if (e.target.checked) next[size] = 0;
+                            else delete next[size];
+                            editV(i, "sizeStocks", next);
+                          }}
+                        />
+                        <span className="flex-1 font-bold">{size}</span>
+                        {checked && <input type="number" min="0" value={(v.sizeStocks || {})[size] ?? 0} onChange={(e) => editV(i, "sizeStocks", { ...(v.sizeStocks || {}), [size]: +e.target.value })} className="input !mt-0 w-20" aria-label={`كمية ${size}`} />}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {v.images.map((x, j) => (
                   <div key={j} className="relative">
-                    <img
-                      src={x.url || x.imageUrl}
-                      className="size-24 rounded-xl object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        editV(
-                          i,
-                          "images",
-                          v.images.filter((_, n) => n !== j),
-                        )
-                      }
-                      className="absolute -left-1 -top-1 rounded-full bg-red-600 px-2 text-white"
-                    >
-                      ×
-                    </button>
+                    <img src={x.url || x.imageUrl} className="size-24 rounded-xl object-cover" />
+                    <button type="button" onClick={() => editV(i, "images", v.images.filter((_, n) => n !== j))} className="absolute -left-1 -top-1 rounded-full bg-red-600 px-2 text-white">×</button>
                   </div>
                 ))}
               </div>

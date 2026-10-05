@@ -35,6 +35,7 @@ type V = {
   age: string;
   stock: number;
   images: Img[];
+  sizeStocks?: Record<string, number>;
 };
 type P = {
   id: number;
@@ -59,6 +60,7 @@ const blank = (): V => ({
   age: "",
   stock: 0,
   images: [],
+  sizeStocks: {},
 });
 const sizeOptions = ["0-3 شهر","3-6 شهر","6-9 شهر","9-12 شهر","12-18 شهر","18-24 شهر","24-36 شهر"];
 const themeDefaults={themeBackground:"#fff9fb",themeText:"#55434c",themePrimary:"#d58fa7",themeSecondary:"#b56d86",themeSoft:"#f8dce6",themeAccent:"#dff0f8",themeBorder:"#eadfd2",themeFooter:"#55434c"};
@@ -77,6 +79,10 @@ export default function Admin() {
     [color, setColor] = useState(""),
     [age, setAge] = useState("");
   useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (["dashboard", "add", "products", "inventory", "settings"].includes(requestedTab || "")) {
+      setTab(requestedTab!);
+    }
     fetch("/api/settings")
       .then((r) => r.json())
       .then(setSettings);
@@ -133,6 +139,12 @@ export default function Admin() {
   async function add(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
+    const expandedVariants = variants.flatMap((v) => {
+      const sizes = Object.entries(v.sizeStocks || {}).filter(([, stock]) => Number(stock) >= 0);
+      return sizes.length
+        ? sizes.map(([size, stock]) => ({ ...v, size, age: "", stock: Number(stock), sizeStocks: undefined }))
+        : [{ ...v, size: v.size || "", stock: Number(v.stock || 0), sizeStocks: undefined }];
+    });
     const d = new FormData(e.currentTarget),
       r = await fetch("/api/products", {
         method: "POST",
@@ -151,7 +163,7 @@ export default function Admin() {
           offer: !!d.get("offer"),
           featured: !!d.get("featured"),
           bestSeller: !!d.get("bestSeller"),
-          variants,
+          variants: expandedVariants,
         }),
       });
     setSaving(false);
@@ -195,6 +207,13 @@ export default function Admin() {
     });
     setNotice("تم حفظ الإعدادات");
   }
+  useEffect(() => {
+    if (tab !== "products" || !products.length) return;
+    const productId = new URLSearchParams(window.location.search).get("product");
+    if (!productId) return;
+    window.setTimeout(() => document.getElementById(`product-${productId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 120);
+  }, [tab, products.length]);
+
   const filtered = useMemo(
     () =>
       products.filter(
@@ -501,83 +520,74 @@ function ProductForm({
           </div>
           {variants.map((v: V, i: number) => (
             <div key={i} className="mt-4 rounded-2xl border p-4">
-              <div className="grid items-end gap-3 md:grid-cols-6">
-                <input
-                  value={v.colorName}
-                  onChange={(e) =>
-                    setVariants((a: V[]) =>
-                      a.map((x, n) =>
-                        n === i ? { ...x, colorName: e.target.value } : x,
-                      ),
-                    )
-                  }
-                  placeholder="اللون"
-                  className="input"
-                />
+              <div className="grid items-end gap-3 md:grid-cols-[1fr_90px_1fr_auto_auto]">
+                <label className="text-sm font-bold">
+                  اللون
+                  <input
+                    value={v.colorName}
+                    onChange={(e) => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, colorName: e.target.value } : x))}
+                    placeholder="مثلاً: سمائي"
+                    className="input"
+                  />
+                </label>
                 <input
                   type="color"
                   value={v.colorHex}
-                  onChange={(e) =>
-                    setVariants((a: V[]) =>
-                      a.map((x, n) =>
-                        n === i ? { ...x, colorHex: e.target.value } : x,
-                      ),
-                    )
-                  }
+                  onChange={(e) => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, colorHex: e.target.value } : x))}
+                  className="h-12 w-full rounded-xl"
+                  aria-label="لون المنتج"
                 />
-                <label className="text-sm font-bold">العمر والقياس<input list="size-options-new" value={v.size||v.age} onChange={(e)=>setVariants((a:V[])=>a.map((x,n)=>n===i?{...x,size:e.target.value,age:""}:x))} className="input" placeholder="اختر أو اكتب قياساً جديداً" /><datalist id="size-options-new">{sizeOptions.map(s=><option key={s} value={s}/>)}</datalist></label>
-                <label className="text-sm font-bold">
-                  الكمية في المخزن
-                  <input type="number" min="0" value={v.stock} onChange={(e) => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, stock: +e.target.value } : x))} className="input" />
-                </label>
                 <label className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border-2 border-dashed p-2 text-xs font-bold">
                   {v.images[0] ? <img src={v.images[0].url || v.images[0].imageUrl} className="size-16 rounded-lg object-cover" /> : <span className="grid size-16 place-items-center rounded-lg bg-stone-50"><ImagePlus /></span>}
-                  الصورة
+                  صور هذا اللون (ترفع مرة واحدة)
                   <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => upload(i, e.target.files)} />
                 </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setVariants((a: V[]) => a.filter((_, n) => n !== i))
-                  }
-                  className="text-red-600"
-                >
+                <button type="button" onClick={() => setVariants((a: V[]) => [...a, blank()])} className="btn-soft">
+                  <Plus /> لون آخر
+                </button>
+                <button type="button" onClick={() => setVariants((a: V[]) => a.filter((_, n) => n !== i))} className="text-red-600" aria-label="حذف اللون">
                   <Trash2 />
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setVariants((a: V[]) => [...a, { ...v, id: undefined, size: "", age: "", stock: 0, images: [...v.images] }])}
-                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#eef7f3] px-4 py-2 font-bold text-[#527465]"
-              >
-                <Plus className="size-4" /> إضافة قياس آخر لنفس المنتج
-              </button>
-              <p className="mt-2 text-xs text-stone-500">القياس الجديد يأخذ الصورة نفسها تلقائياً، ويمكن الضغط على الصورة لإضافة صور أخرى.</p>
+              <div className="mt-4 rounded-2xl bg-[#fff9fb] p-4">
+                <b>حددي القياسات المتوفرة لهذا اللون والكمية لكل قياس:</b>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {sizeOptions.map((size) => {
+                    const checked = Object.prototype.hasOwnProperty.call(v.sizeStocks || {}, size);
+                    return (
+                      <label key={size} className={`flex items-center gap-2 rounded-xl border p-3 ${checked ? "border-[#d58fa7] bg-[#fff1f6]" : "bg-white"}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => setVariants((a: V[]) => a.map((x, n) => {
+                            if (n !== i) return x;
+                            const next = { ...(x.sizeStocks || {}) };
+                            if (e.target.checked) next[size] = 0;
+                            else delete next[size];
+                            return { ...x, sizeStocks: next };
+                          }))}
+                        />
+                        <span className="flex-1 font-bold">{size}</span>
+                        {checked && (
+                          <input
+                            type="number"
+                            min="0"
+                            value={(v.sizeStocks || {})[size] ?? 0}
+                            onChange={(e) => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, sizeStocks: { ...(x.sizeStocks || {}), [size]: +e.target.value } } : x))}
+                            className="input !mt-0 w-20"
+                            aria-label={`كمية ${size}`}
+                          />
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {v.images.map((img, j) => (
                   <div key={j} className="relative">
-                    <img
-                      src={img.url || img.imageUrl}
-                      className="size-24 rounded-xl object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setVariants((a: V[]) =>
-                          a.map((x, n) =>
-                            n === i
-                              ? {
-                                  ...x,
-                                  images: x.images.filter((_, k) => k !== j),
-                                }
-                              : x,
-                          ),
-                        )
-                      }
-                      className="absolute -left-1 -top-1 rounded-full bg-red-600 px-2 text-white"
-                    >
-                      ×
-                    </button>
+                    <img src={img.url || img.imageUrl} className="size-24 rounded-xl object-cover" />
+                    <button type="button" onClick={() => setVariants((a: V[]) => a.map((x, n) => n === i ? { ...x, images: x.images.filter((_, k) => k !== j) } : x))} className="absolute -left-1 -top-1 rounded-full bg-red-600 px-2 text-white">×</button>
                   </div>
                 ))}
               </div>
@@ -651,7 +661,7 @@ function Products({
           </thead>
           <tbody>
             {products.map((p: P, i: number) => (
-              <tr key={p.id} className="border-t">
+              <tr id={`product-${p.id}`} key={p.id} className="border-t scroll-mt-6">
                 <td>{i + 1}</td>
                 <td>
                   {p.variants[0]?.images[0] && (
@@ -673,7 +683,7 @@ function Products({
                 <td>{p.variants.reduce((s, v) => s + v.stock, 0)}</td>
                 <td>
                   <a
-                    href={`/admin/products/${p.id}`}
+                    href={`/admin/products/${p.id}?returnProduct=${p.id}`}
                     className="ml-3 font-bold text-[#b56d86]"
                   >
                     تعديل

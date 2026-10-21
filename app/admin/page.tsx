@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   Baby,
@@ -124,22 +124,37 @@ export default function Admin() {
       else { setAuth(true); load(); }
     } else setNotice((await r.json()).error);
   }
+  const pendingUploads = useRef(0);
+  const [uploading, setUploading] = useState(false);
   async function upload(i: number, files: FileList | null) {
-    for (const original of Array.from(files || [])) {
-      const file = await compressProductImage(original);
-      const f = new FormData();
-      f.append("file", file);
-      const r = await fetch("/api/upload", { method: "POST", body: f }),
-        img = await r.json();
-      if (r.ok)
-        setVariants((a) =>
-          a.map((v, n) => (n === i ? { ...v, images: [...v.images, img] } : v)),
-        );
-      else setNotice(img.error);
+    const selected = Array.from(files || []);
+    if (!selected.length) return;
+    pendingUploads.current += 1;
+    setUploading(true);
+    try {
+      for (const original of selected) {
+        const file = await compressProductImage(original);
+        const body = new FormData();
+        body.append("file", file);
+        const response = await fetch("/api/upload", { method: "POST", body });
+        const img = await response.json();
+        if (!response.ok || !img.url) throw new Error(img.error || "تعذر رفع الصورة");
+        setVariants((items) => items.map((v, n) => n === i ? { ...v, images: [...v.images, img] } : v));
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? `${error.message} — أعد اختيار الصور التي لم تظهر قبل الحفظ` : "تعذر رفع الصور، يرجى إعادة المحاولة");
+    } finally {
+      pendingUploads.current -= 1;
+      setUploading(pendingUploads.current > 0);
     }
   }
   async function add(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pendingUploads.current || saving) {
+      setNotice("يرجى انتظار اكتمال رفع جميع الصور قبل الحفظ");
+      return;
+    }
+    const form = e.currentTarget;
     setSaving(true);
     const expandedVariants = variants.flatMap((v) => {
       const sizes = Object.entries(v.sizeStocks || {}).filter(([, stock]) => Number(stock) >= 0);
@@ -147,7 +162,7 @@ export default function Admin() {
         ? sizes.map(([size, stock]) => ({ ...v, size, age: "", stock: Number(stock), sizeStocks: undefined, hasSizes: undefined }))
         : [{ ...v, size: "", age: "", stock: Number(v.stock || 0), sizeStocks: undefined, hasSizes: undefined }];
     });
-    const d = new FormData(e.currentTarget),
+    const d = new FormData(form),
       r = await fetch("/api/products", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -172,7 +187,7 @@ export default function Admin() {
     const result = await r.json();
     setNotice(r.ok ? "تم حفظ المنتج بنجاح" : result.error || "تعذر حفظ المنتج");
     if (r.ok) {
-      e.currentTarget.reset();
+      form.reset();
       setVariants([blank()]);
       load();
     }
@@ -412,6 +427,7 @@ export default function Admin() {
             upload={upload}
             save={add}
             saving={saving}
+            uploading={uploading}
           />
         )}{" "}
         {tab === "products" && (
@@ -456,6 +472,7 @@ function ProductForm({
   upload,
   save,
   saving,
+  uploading,
 }: any) {
   return (
     <>
@@ -509,7 +526,7 @@ function ProductForm({
             <Check name="bestSeller" label="الأكثر طلباً" />
           </div>
         </section>
-        <section className="rounded-3xl bg-white p-5">
+        <fieldset disabled={saving || uploading} className="min-w-0 rounded-3xl bg-white p-5">
           <div className="flex justify-between">
             <h3 className="text-xl font-black">الألوان والعمر والقياس والصور</h3>
             <button
@@ -619,12 +636,12 @@ function ProductForm({
               </div>
             </div>
           ))}
-        </section>
+        </fieldset>
         <button
-          disabled={saving}
+          disabled={saving || uploading}
           className="rounded-xl bg-[#d58fa7] px-8 py-3 font-bold text-white"
         >
-          {saving ? "جاري الحفظ..." : "حفظ المنتج"}
+          {uploading ? "جاري رفع الصور..." : saving ? "جاري الحفظ..." : "حفظ المنتج"}
         </button>
       </form>
     </>
@@ -690,15 +707,11 @@ function Products({
               <tr id={`product-${p.id}`} key={p.id} className="border-t scroll-mt-6">
                 <td>{i + 1}</td>
                 <td>
-                  {p.variants[0]?.images[0] && (
-                    <img
-                      src={
-                        p.variants[0].images[0].url ||
-                        p.variants[0].images[0].imageUrl
-                      }
-                      className="size-14 rounded-xl object-cover"
-                    />
-                  )}
+                  <div className="flex max-w-56 gap-1 overflow-x-auto">
+                    {Array.from(new Map(p.variants.flatMap((v) => v.images).map((image) => [image.url || image.imageUrl, image])).values()).map((image) => (
+                      <img key={image.url || image.imageUrl} src={image.url || image.imageUrl} alt={p.name} className="size-14 shrink-0 rounded-xl object-cover" />
+                    ))}
+                  </div>
                 </td>
                 <td>{p.sku}</td>
                 <td>

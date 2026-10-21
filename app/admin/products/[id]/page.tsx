@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ImagePlus, Plus, Save, Trash2 } from "lucide-react";
 import { compressProductImage } from "@/lib/compress-image";
 type Image = { imageUrl?: string; url?: string };
@@ -38,7 +38,7 @@ function groupVariantsByColor(items: Variant[]) {
         current.sizeStocks = { ...(current.sizeStocks || {}), [size]: Number(item.stock || 0) };
         current.hasSizes = true;
       }
-      if ((!current.images || !current.images.length) && item.images?.length) current.images = item.images;
+      current.images = Array.from(new Map([...current.images, ...(item.images || [])].map((image) => [image.url || image.imageUrl, image])).values());
     }
   }
   return Array.from(groups.values());
@@ -74,25 +74,36 @@ export default function EditProduct({
         n === i ? { ...x, [k]: v } : x,
       ),
     }));
+  const pendingUploads = useRef(0);
+  const [uploading, setUploading] = useState(false);
   async function upload(i: number, files: FileList | null) {
-    if (!files) return;
-    for (const original of Array.from(files)) {
-      const file = await compressProductImage(original);
-      const f = new FormData();
-      f.append("file", file);
-      const r = await fetch("/api/upload", { method: "POST", body: f });
-      const x = await r.json();
-      if (r.ok)
-        setP((old: any) => ({
-          ...old,
-          variants: old.variants.map((v: Variant, n: number) =>
-            n === i ? { ...v, images: [...v.images, { url: x.url }] } : v,
-          ),
-        }));
+    const selected = Array.from(files || []);
+    if (!selected.length) return;
+    pendingUploads.current += 1;
+    setUploading(true);
+    try {
+      for (const original of selected) {
+        const file = await compressProductImage(original);
+        const body = new FormData();
+        body.append("file", file);
+        const response = await fetch("/api/upload", { method: "POST", body });
+        const img = await response.json();
+        if (!response.ok || !img.url) throw new Error(img.error || "تعذر رفع الصورة");
+        setP((old: any) => ({ ...old, variants: old.variants.map((v: Variant, n: number) => n === i ? { ...v, images: [...v.images, img] } : v) }));
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? `${error.message} — أعد اختيار الصور التي لم تظهر قبل الحفظ` : "تعذر رفع الصور، يرجى إعادة المحاولة");
+    } finally {
+      pendingUploads.current -= 1;
+      setUploading(pendingUploads.current > 0);
     }
   }
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (pendingUploads.current || saving) {
+      setNotice("يرجى انتظار اكتمال رفع جميع الصور قبل الحفظ");
+      return;
+    }
     setSaving(true);
     const expandedVariants = p.variants.flatMap((v: Variant) => {
       const sizes = Object.entries(v.sizeStocks || {}).filter(([, stock]) => Number(stock) >= 0);
@@ -134,8 +145,8 @@ export default function EditProduct({
         </a>
         <div className="mt-5 flex justify-between">
           <h1 className="text-3xl font-black">تعديل المنتج</h1>
-          <button disabled={saving} className="btn-soft">
-            <Save /> {saving ? "جاري الحفظ" : "حفظ التعديل"}
+          <button disabled={saving || uploading} className="btn-soft">
+            <Save /> {uploading ? "جاري رفع الصور..." : saving ? "جاري الحفظ" : "حفظ التعديل"}
           </button>
         </div>
         {notice && <p className="my-4 rounded-xl bg-[#dff0f8] p-3">{notice}</p>}
@@ -229,7 +240,7 @@ export default function EditProduct({
             ))}
           </div>
         </section>
-        <section className="mt-5 rounded-3xl bg-white p-5">
+        <fieldset disabled={saving || uploading} className="mt-5 min-w-0 rounded-3xl bg-white p-5">
           <div className="flex justify-between">
             <h2 className="text-xl font-black">الألوان والعمر والقياس والصور</h2>
             <button
@@ -338,7 +349,7 @@ export default function EditProduct({
               </div>
             </div>
           ))}
-        </section>
+        </fieldset>
       </form>
     </main>
   );

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 
 export type SeasonalEffect={id:number;name:string;preset:string;active:boolean;startDate:string|null;endDate:string|null;speed:string;density:number;opacity:number;elementSize:number;motion:string;desktopEnabled:boolean;mobileEnabled:boolean;pages:string;customSymbols:string|null;barEnabled:boolean;barText:string|null;barTextColor:string;barBackground:string;barLink:string|null;sortOrder:number};
 const presetSymbols:Record<string,string[]>={
@@ -16,8 +16,8 @@ export function SeasonalEffects({effects,disabled=false,suppress=false,preview=f
       {active.map(effect=>{
         const symbols=effect.preset==="custom"&&effect.customSymbols?.trim()?Array.from(effect.customSymbols.replace(/\s+/g,"")):presetSymbols[effect.preset]||presetSymbols.custom;
         const count=Math.max(3,Math.min(42,Math.round(effect.density*.42)));
-        return <div key={effect.id} className={`seasonal-preset-${effect.preset} ${effect.mobileEnabled?"":"hidden md:block"} ${effect.desktopEnabled?"":"md:hidden"}`}>
-          {Array.from({length:count},(_,i)=><span key={i} className={`seasonal-particle seasonal-${effect.motion} speed-${effect.speed} ${i>=Math.ceil(count*.55)?"seasonal-mobile-extra":""}`} style={{left:`${(i*37+11)%101}%`,top:`${-12-(i*19)%75}px`,fontSize:`${effect.elementSize*(.78+(i%4)*.09)}px`,opacity:effect.opacity/100,animationDelay:`-${(i*0.73)%8}s`,animationDuration:`${7+(i%6)}s`}}>{symbols[i%symbols.length]}</span>)}
+        return <div key={effect.id} className={`seasonal-preset-${effect.preset} ${effect.mobileEnabled === false ? "seasonal-hide-mobile" : ""} ${effect.desktopEnabled === false ? "seasonal-hide-desktop" : ""}`}>
+          {Array.from({length:count},(_,i)=><span key={i} className={`seasonal-particle seasonal-${effect.motion} speed-${effect.speed} ${i>=Math.ceil(count*.55)?"seasonal-mobile-extra":""}`} style={{"--particle-top":`${12+(i*23)%70}%`,left:`${(i*37+11)%101}%`,top:`${-12-(i*19)%75}px`,fontSize:`${effect.elementSize*(.78+(i%4)*.09)}px`,opacity:effect.opacity/100,animationDelay:`-${(i*0.73)%8}s`,animationDuration:`${7+(i%6)}s`} as CSSProperties}>{symbols[i%symbols.length]}</span>)}
         </div>
       })}
     </div>
